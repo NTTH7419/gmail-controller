@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-I${workspaceFolder}/curl_8.10.1/include", // path to cURL headers
+                "${workspaceFolder}/source/*.cpp", // your source file
+                "-L${workspaceFolder}/curl_8.10.1/lib", // path to cURL library
+                "-lcurl", // link against cURL
+                "-o",
+                "${workspaceFolder}/main" // output executable name
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}

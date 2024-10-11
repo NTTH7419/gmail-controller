@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Win64",
+            "includePath": [
+                "${workspaceFolder}/curl_8.10.1/**",
+                "${workspaceFolder}/curl_8.10.1/include/**" // path to cURL headers
+            ],
+            "defines": [],
+            "compilerPath": "C:\\MinGW\\bin\\g++.exe", // path to your g++
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
