@@ -3,10 +3,10 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include <sstream>
 #include <ctime>
 #include <curl/curl.h>
 #include "base64.h"
+#include "tool.h"
 
 using namespace std;
 
@@ -18,3 +18,4 @@ struct Message {
 };
 
 void sendEmail(const string& accessToken, const Message& m);
+Message getLatestMessage(const string& accessToken);

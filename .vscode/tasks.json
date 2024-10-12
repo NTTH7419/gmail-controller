@@ -11,7 +11,7 @@
                 "-L${workspaceFolder}/curl_8.10.1/lib", // path to cURL library
                 "-lcurl", // link against cURL
                 "-o",
-                "${workspaceFolder}/main" // output executable name
+                "${workspaceFolder}/release/main" // output executable name
             ],
             "group": {
                 "kind": "build",

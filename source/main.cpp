@@ -17,13 +17,11 @@ int main() {
         fout.close();
     }
 
-    Message m;
-    m.from = "pntuan23@clc.fitus.edu.vn";
-    m.to = "quangthangngo181@gmail.com";
-    m.subject = "Test Gmail API";
-    m.body = "Hello World";
+    Message m = getLatestMessage(t.access_token);
+    cout << "From: " << m.from << endl;
+    cout << "To: " << m.to << endl;
+    cout << "Subject: " << m.subject << endl;
+    cout << "Body: " << m.body << endl;
 
-    sendEmail(t.access_token, m);
-    
     return 0;
 }

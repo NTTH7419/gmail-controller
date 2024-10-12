@@ -5,6 +5,7 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include "tool.h"
 
 using namespace std;
 
