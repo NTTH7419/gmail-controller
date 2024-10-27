@@ -2,6 +2,7 @@
 
 #include <curl/curl.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -9,18 +10,42 @@
 
 using namespace std;
 
-struct ClientSecrect {
-	static string client_id;
-	static string auth_uri;
-	static string token_uri;
-	static string auth_provider_x509_cert_url;
-	static string client_secret;
-	static string redirect_uri;
+struct Credential {
+	string client_id;
+	string auth_uri;
+	string token_uri;
+	string client_secret;
+	string redirect_uri;
 };
 
 struct Token {
-	string access_token = "";
-	string refresh_token = "";
+	string access_token;
+	string refresh_token;
+	long refresh_time;
 };
 
-Token login();
+class OAuth {
+	private:
+		Credential credential;
+		string client_secret_file;
+
+		Token token;
+		string token_file;
+
+		bool is_error = false;
+		string error_message;
+
+		void openGoogleLogin();
+		string getAuthCode();
+		string getTokenResponse(const string& auth_code);
+		void writeTokenToFile();
+		void refreshToken();
+	
+	public:
+		OAuth();
+		~OAuth();
+		void login();
+		string getAccessToken();
+		bool good();
+		string getErrorMessage();
+};

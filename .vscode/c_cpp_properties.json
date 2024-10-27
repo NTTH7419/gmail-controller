@@ -4,7 +4,9 @@
             "name": "Win64",
             "includePath": [
                 "${workspaceFolder}/curl_8.10.1/**",
-                "${workspaceFolder}/curl_8.10.1/include/**" // path to cURL headers
+                "${workspaceFolder}/curl_8.10.1/include/**", // path to cURL headers
+                "${workspaceFolder}/json/include/**"
+
             ],
             "defines": [],
             "compilerPath": "C:\\MinGW\\bin\\g++.exe", // path to your g++
