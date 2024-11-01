@@ -1,0 +1,8 @@
+ Volume in drive C is OS
+ Volume Serial Number is 006F-5D12
+
+ Directory of C:\Users\Admin\Downloads\socket\files
+
+09/18/2024  07:55 PM           118,185 cool.jpg
+               1 File(s)        118,185 bytes
+               0 Dir(s)  91,861,282,816 bytes free

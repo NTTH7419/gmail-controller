@@ -13,6 +13,7 @@
 #include <fstream>
 #include <istream>
 #include <ostream>
+#include <vector>
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -31,21 +32,69 @@ using namespace std;
 
 #pragma comment(lib, "Ws2_32.lib")
 
+class Client;
+class Command;
+class ShutdownCommand;
+class GetFileCommand;
+class ListFileCommand;
+class DeleteFileCommand;
 
 class Client{
 private:
     WSADATA wsaData;
-    SOCKET ConnectSocket = INVALID_SOCKET;
+    SOCKET server_socket = INVALID_SOCKET;
     struct addrinfo *result = NULL,
                     *ptr = NULL,
                     hints;
     char *sendbuf;
     char recvbuf[DEFAULT_BUFLEN];
     int recvbuflen = DEFAULT_BUFLEN;
+    vector<Command*> commands;
 public:
+    Client();
     void initialize();
+    SOCKET& getServerSocket();
     void connectToServer(char* address);
     void process();
+    int listFiles(string dir);
     ~Client();
 
+};
+
+class Command{
+public:
+    virtual bool isCommand(const string& command) = 0;
+    virtual void execute(Client& Client, const string& param) = 0;
+};
+
+class ShutdownCommand : public Command{
+public:
+    bool isCommand(const string& command) override;
+    void execute(Client& client, const string& param) override;
+};
+
+class ListFileCommand : public Command{
+private:
+    vector<string> listFile(const string& path);
+
+public:
+    bool isCommand(const string& command) override;
+    void execute(Client& client, const string& param) override;
+};
+
+class GetFileCommand : public Command{
+private:
+    void receiveFile(Client& client, const string& filename);
+public:
+    bool isCommand(const string& command) override;
+    void execute(Client& client, const string& param) override;
+};
+
+
+class DeleteFileCommand : public Command{
+private:
+    void sendFile(Client& client, const string& filename);
+public:
+    bool isCommand(const string& command) override;
+    void execute(Client& client, const string& param) override;
 };

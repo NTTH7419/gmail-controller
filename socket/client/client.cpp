@@ -1,34 +1,10 @@
 #include "client.h"
 
-void receiveFile(SOCKET sock, const char* filename) {
-    char buffer[1024];
-    int rec = recv(sock, buffer, sizeof(buffer), 0);
-    char* recvc = new char[rec + 1] {'\0'};
-    strncpy(recvc, buffer, rec);
-
-    if (strcmp(recvc, "sending file") != 0) return;
-
-    cout << "ready to received" << endl;
-    std::ofstream file(filename, std::ios::binary);
-    if (!file) {
-        std::cerr << "Failed to create file: " << filename << std::endl;
-        return;
-    }
-
-    int bytesReceived;
-    
-    do{
-        bytesReceived = recv(sock, buffer, sizeof(buffer), 0);
-        file.write(buffer, bytesReceived);
-    }
-    while(bytesReceived == 1024);
-
-    if (bytesReceived == 0)
-        cout << "con cac" << endl;
-
-
-    file.close();
-    cout << "file received" << endl;
+Client::Client(){
+    commands.push_back(new ShutdownCommand);
+    commands.push_back(new GetFileCommand);
+    commands.push_back(new DeleteFileCommand);
+    commands.push_back(new ListFileCommand);
 }
 
 void Client::initialize(){
@@ -56,25 +32,25 @@ void Client::connectToServer(char* address){
     for(ptr=result; ptr != NULL ;ptr=ptr->ai_next) {
 
         // Create a SOCKET for connecting to server
-        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, 
+        server_socket = socket(ptr->ai_family, ptr->ai_socktype, 
             ptr->ai_protocol);
-        if (ConnectSocket == INVALID_SOCKET) {
+        if (server_socket == INVALID_SOCKET) {
             cout << "socket failed with error: " << WSAGetLastError();
             WSACleanup();
             return;
         }
-        error = connect( ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+        error = connect( server_socket, ptr->ai_addr, (int)ptr->ai_addrlen);
 
         if (error == SOCKET_ERROR) {
-            closesocket(ConnectSocket);
-            ConnectSocket = INVALID_SOCKET;
+            closesocket(server_socket);
+            server_socket = INVALID_SOCKET;
             continue;
         }
 
         break;
     }
 
-    if (ConnectSocket == INVALID_SOCKET) {
+    if (server_socket == INVALID_SOCKET) {
         cout << "Unable to connect to server!" << endl;
         return;
     }
@@ -83,29 +59,155 @@ void Client::connectToServer(char* address){
     freeaddrinfo(result);      
 }
 
+
+
 void Client::process(){
     string input;
     while(true){
+        cout << endl << "Input command (\"end\" to end the program): " << endl;
         getline(cin, input);
-        send(ConnectSocket, input.c_str(), input.length(), 0);
-        if (input == "end"){
-            return;
+        int comma = input.find(' ');
+        string command = input;
+        string param = "";
+        if (comma != string::npos){
+            command = input.substr(0, comma);
+            param = input.substr(comma + 1);
         }
 
-        if (input == "send file"){
-            receiveFile(ConnectSocket, "adudu.png");
-        }
+        send(server_socket, input.c_str(), input.length(), 0);
+        cout << "command sent: " << input << endl;
 
+        if (command == "end") return;
+
+        for (int i = 0; i < commands.size(); i++){
+            if (commands[i]->isCommand(command)){
+                commands[i]->execute(*this, param);
+                cout << "command executed!" << endl;
+                break;
+            }
+        }
         
     }
 }
 
+SOCKET& Client::getServerSocket(){
+    return server_socket;
+}
+
+
 Client::~Client(){
+    while(!commands.empty()){
+        delete commands.back();
+        commands.pop_back();
+    }
+
     freeaddrinfo(result);
-    closesocket(ConnectSocket);
+    closesocket(server_socket);
     WSACleanup();
 }
 
+
+//*Shutdown Command
+bool ShutdownCommand::isCommand(const string& command){
+    return command == "shutdown";
+}
+
+void ShutdownCommand::execute(Client& client, const string& param){
+
+}
+
+//*Get File Command
+bool GetFileCommand::isCommand(const string& command){
+    return command == "getf";
+}
+
+void GetFileCommand::execute(Client& client, const string& param){
+    receiveFile(client, param);
+}
+
+void GetFileCommand::receiveFile(Client& client, const string& filepath){
+    const int buffer_len = DEFAULT_BUFLEN;
+    char buffer[buffer_len];
+    SOCKET& server_socket = client.getServerSocket();
+    string filename = filepath;
+
+    int last_slash = filepath.rfind('\\');
+    if (last_slash != string::npos){
+        filename = filepath.substr(last_slash + 1);
+    }
+
+
+    int byte_received = recv(server_socket, buffer, sizeof(buffer), 0);
+    buffer[byte_received] = '\0';
+
+    if (strcmp(buffer, "sending file") != 0){
+        cout << "Error: File could not be sent" << endl;
+        return;
+    }
+
+    cout << "ready to receive file" << endl;
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to create file: " << filename << std::endl;
+        return;
+    }
+    
+    do{
+        byte_received = recv(server_socket, buffer, sizeof(buffer), 0);
+        file.write(buffer, byte_received);
+    }
+    while(byte_received == 1024);
+
+    file.close();
+    cout << "file received" << endl;
+}
+
+//*Delete File Command
+bool DeleteFileCommand::isCommand(const string& command){
+    return command == "deletef";
+}
+
+void DeleteFileCommand::execute(Client& client, const string& filepath){
+    system(("del " + filepath).c_str());
+    cout << "deleted file at: " << filepath << endl;
+}
+
+//* List File Command
+bool ListFileCommand::isCommand(const string& command){
+    return command == "listf";
+}
+
+void ListFileCommand::execute(Client& client, const string& param){
+    const int buffer_len = DEFAULT_BUFLEN;
+    char buffer[buffer_len];
+    SOCKET& server_socket = client.getServerSocket();
+
+    int byte_received = recv(server_socket, buffer, buffer_len, 0);
+    buffer[byte_received] = '\0';
+    cout << buffer << endl;
+
+    if (strcmp(buffer, "listing file") != 0){
+        cout << "Error! Initial response not received!" << endl;
+        return;
+    }
+
+    cout << "current files in the directory " << param << ':' << endl;
+    char* stop;
+    do{
+        byte_received = recv(server_socket, buffer, buffer_len, 0);
+        buffer[byte_received] = '\0';
+        stop = strstr(buffer, "FILE_LISTED");
+        if(stop != NULL){
+            buffer[stop - buffer] = '\0';
+            cout << buffer;
+            break;
+        }
+        cout << buffer;
+    }
+    while(byte_received > 0);
+
+    cout << "file listed successfully !" << endl;
+}
 
 int __cdecl main(int argc, char **argv) 
 {    
