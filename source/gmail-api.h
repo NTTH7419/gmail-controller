@@ -1,10 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <string>
-#include <cstring>
-#include <ctime>
-#include <curl/curl.h>
 #include "base64.h"
 #include "tool.h"
 #include "OAuth2.h"
@@ -32,37 +27,40 @@ class Attachment {
 
 class Message {
 	private:
+		string id;
+		string thread_id;
+
 		string from;
 		string to;
 		string subject;
 		string body;
-
-		Attachment attachment;
 	
 		string createMIME() const;
-		string createMIMEWithAttachment() const;
+		string createMIME(const Attachment& attachment) const;
 
 	public:
-		Message() : from(""), to(""), subject(""), body(""), attachment("", "") {}
-		Message(const string& from, const string& to, const string& subject, const string& body, const Attachment& attachment) : 
-		from(from), to(to), subject(subject), body(body), attachment(attachment) {};
-		Message(const string& from, const string& to, const string& subject, const string& body) : 
-		from(from), to(to), subject(subject), body(body), attachment("", "") {};
+		Message() : from(""), to(""), subject(""), body("") {}
+		Message(const string& from, const string& to, const string& subject, const string& body)
+			: from(from), to(to), subject(subject), body(body) {};
+		Message(const string& from, const string& to, const string& subject, const string& body)
+			: from(from), to(to), subject(subject), body(body) {};
 		~Message() {}
 
-
 		string getEncodedMessage() const;
+		string getEncodedMessage(const Attachment& attachment) const;
+		string getID() const;
+		string getThreadID() const;
 		string getFromEmail() const;
 		string getToEmail() const;
 		string getSubject() const;
 		string getBody() const;
-		// Attachment getAttachment() const;
 
+		void setID(const string& id);
+		void setThreadID(const string& thread_id);
 		void setFromEmail(const string& from);
 		void setToEmail(const string& to);
 		void setSubject(const string& subject);
 		void setBody(const string& body);
-		void setAttachment(const Attachment& attachment);
 };
 
 class GmailAPI {
@@ -73,6 +71,7 @@ class GmailAPI {
 
 	public:
 		void sendMessage(const Message& message);
+		void sendMessage(const Message& message, const Attachment& attachment);
 		Message getLatestMessage();
 };
 

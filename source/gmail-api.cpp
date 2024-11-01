@@ -41,6 +41,14 @@ bool Attachment::exist() const {
     return (file_name.length() && file_content.length());
 }
 
+string Message::getID() const {
+    return id;
+}
+
+string Message::getThreadID() const {
+    return thread_id;
+}
+
 string Message::getFromEmail() const {
     return from;
 }
@@ -57,9 +65,13 @@ string Message::getBody() const {
     return body;
 }
 
-// Attachment Message::getAttachment() const {
-//     return attachment;
-// }
+void Message::setID(const string& id) {
+    this->id = id;
+}
+
+void Message::setThreadID(const string& thread_id) {
+    this->thread_id = thread_id;
+}
 
 void Message::setFromEmail(const string& from) {
     this->from = from;
@@ -77,10 +89,6 @@ void Message::setBody(const string& body) {
     this->body = body;
 }
 
-void Message::setAttachment(const Attachment& attachment) {
-    this->attachment = attachment;
-}
-
 string Message::createMIME() const {
     string MIME_message =
             "From: " + from + "\r\n"
@@ -93,7 +101,7 @@ string Message::createMIME() const {
     return MIME_message;
 }
 
-string Message::createMIMEWithAttachment() const {
+string Message::createMIME(const Attachment& attachment) const {
     string MIME_message =
             "MIME-Version: 1.0\r\n"
             "To: " + to + "\r\n"
@@ -114,12 +122,25 @@ string Message::createMIMEWithAttachment() const {
 }
 
 string Message::getEncodedMessage() const {
-    if (attachment.exist()) return base64_encode(createMIMEWithAttachment());
     return base64_encode(createMIME());
 }
 
 void GmailAPI::sendMessage(const Message& message) {
     string encoded_message = message.getEncodedMessage();
+    
+    const string post_fields = R"({"raw": ")" + encoded_message + R"("})";
+
+    struct curl_slist *headers = NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+
+    string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
+
+    makeRequest(url, headers, post_fields);
+}
+
+void GmailAPI::sendMessage(const Message& message, const Attachment& attachment) {
+    string encoded_message = message.getEncodedMessage(attachment);
     
     const string post_fields = R"({"raw": ")" + encoded_message + R"("})";
 
@@ -158,6 +179,9 @@ Message GmailAPI::getLatestMessage() {
     string response = makeRequest(url, headers, "");
 
     json j = json::parse(response);
+
+    message.setID(j["id"]);
+    message.setThreadID(j["threadId"]);
 
     auto response_headers = j["payload"]["headers"];
     for (auto header: response_headers) {
