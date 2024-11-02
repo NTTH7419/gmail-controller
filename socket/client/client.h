@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <string.h>
+#include <cstring>
 #include <string>
 #include <fstream>
 #include <istream>
@@ -26,18 +26,7 @@
 
 using namespace std;
 
-#include <winsock2.h>
-#include <iostream>
-#include <fstream>
-
-#pragma comment(lib, "Ws2_32.lib")
-
 class Client;
-class Command;
-class ShutdownCommand;
-class GetFileCommand;
-class ListFileCommand;
-class DeleteFileCommand;
 
 class Client{
 private:
@@ -49,52 +38,14 @@ private:
     char *sendbuf;
     char recvbuf[DEFAULT_BUFLEN];
     int recvbuflen = DEFAULT_BUFLEN;
-    vector<Command*> commands;
+
 public:
     Client();
     void initialize();
     SOCKET& getServerSocket();
     void connectToServer(char* address);
-    void process();
-    int listFiles(string dir);
     ~Client();
-
-};
-
-class Command{
-public:
-    virtual bool isCommand(const string& command) = 0;
-    virtual void execute(Client& Client, const string& param) = 0;
-};
-
-class ShutdownCommand : public Command{
-public:
-    bool isCommand(const string& command) override;
-    void execute(Client& client, const string& param) override;
-};
-
-class ListFileCommand : public Command{
-private:
-    vector<string> listFile(const string& path);
-
-public:
-    bool isCommand(const string& command) override;
-    void execute(Client& client, const string& param) override;
-};
-
-class GetFileCommand : public Command{
-private:
-    void receiveFile(Client& client, const string& filename);
-public:
-    bool isCommand(const string& command) override;
-    void execute(Client& client, const string& param) override;
 };
 
 
-class DeleteFileCommand : public Command{
-private:
-    void sendFile(Client& client, const string& filename);
-public:
-    bool isCommand(const string& command) override;
-    void execute(Client& client, const string& param) override;
-};
+bool receiveFile(Client& client);

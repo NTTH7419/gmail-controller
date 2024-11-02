@@ -9,11 +9,11 @@ string makeRequest(const string& request_url, struct curl_slist *headers, const 
     CURL *curl;
     CURLcode res;
     string response;
-
     curl = curl_easy_init();
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, request_url.c_str());
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "cacert.pem");
+        curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        curl_easy_setopt(curl, CURLOPT_CAINFO, "socket/client/cacert.pem");
         if (headers) curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         if (post_fields.length()) curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields.c_str());
 

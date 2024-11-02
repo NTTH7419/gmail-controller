@@ -6,10 +6,10 @@
             "type": "shell",
             "command": "g++",
             "args": [
-                "-I${workspaceFolder}/curl_8.10.1/include", // path to cURL headers
-                "-I${workspaceFolder}/json/include", // path to JSON headers
+                "-I${workspaceFolder}/lib/curl_8.10.1/include", // path to cURL headers
+                "-I${workspaceFolder}/lib/json/include", // path to JSON headers
                 "${workspaceFolder}/source/*.cpp", // your source file
-                "-L${workspaceFolder}/curl_8.10.1/lib", // path to cURL library
+                "-L${workspaceFolder}/lib/curl_8.10.1/lib", // path to cURL library
                 "-lcurl", // link against cURL
                 "-o",
                 "${workspaceFolder}/release/main" // output executable name

@@ -27,11 +27,6 @@ using namespace std;
 
 
 class Server;
-class Command;
-class ShutdownCommand;
-class GetFileCommand;
-class ListFileCommand;
-class DeleteFileCommand;
 
 class Server{
 private:
@@ -44,8 +39,6 @@ private:
     int receive_buffer_len = DEFAULT_BUFLEN;
     SOCKET server_socket = INVALID_SOCKET;
     SOCKET client_socket = INVALID_SOCKET;
-
-    vector<Command*> commands;
 public:
     Server();
     void initialize();
@@ -61,45 +54,6 @@ public:
     int receive(string&);
     void echo(const string& message);
     ~Server();
-
-
 };
 
-
-class Command{
-public:
-    virtual bool isCommand(const string& command) = 0;
-    virtual void execute(Server& server, const string& param) = 0;
-};
-
-class ShutdownCommand : public Command{
-public:
-    bool isCommand(const string& command) override;
-    void execute(Server& server, const string& param) override;
-};
-
-class ListFileCommand : public Command{
-private:
-    vector<string> listFile(const string& path);
-
-public:
-    bool isCommand(const string& command) override;
-    void execute(Server& server, const string& param) override;
-};
-
-class GetFileCommand : public Command{
-private:
-    void sendFile(Server& server, const string& filename);
-public:
-    bool isCommand(const string& command) override;
-    void execute(Server& server, const string& param) override;
-};
-
-
-class DeleteFileCommand : public Command{
-private:
-    void deleteFile(Server& server, const string& filename);
-public:
-    bool isCommand(const string& command) override;
-    void execute(Server& server, const string& param) override;
-};
+bool sendFile(Server& server, const string& filepath);

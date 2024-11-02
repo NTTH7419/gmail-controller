@@ -1,9 +1,6 @@
 #include "server.h"
 
 Server::Server(){
-    // commands.push_back(new ShutdownCommand());
-    commands.push_back(new ListFileCommand());
-    commands.push_back(new GetFileCommand());
 
 }
 
@@ -77,16 +74,6 @@ int Server::listenForConnection(){
     return 0;
 }
 
-void Server::listenForRequest(){
-    while(true){
-        string message;
-        int bytes_received = receive(message);
-        if (string(message) == "end") return;
-
-        process(string(message));
-    }
-}
-
 int Server::acceptConnection(){
     client_socket = accept(server_socket, NULL, NULL);
     if (client_socket == INVALID_SOCKET) {
@@ -133,31 +120,7 @@ void Server::echo(const string& message){
     cout << "message sent: " << message << endl;
 }
 
-int Server::process(string message){
-    int comma = message.find(' ');
-    string command = message;
-    string param = "";
-    if (comma != string::npos){
-        command = message.substr(0, comma);
-        param = message.substr(comma + 1);
-    }
-
-    //executing command
-    for (int i = 0; i < commands.size(); i++){
-        if (commands[i]->isCommand(command)){
-            commands[i]->execute(*this, param);
-            return 0;
-        }
-    }
-    cout << "Error: invalid command" << endl;
-    return 1;
-}
-
 Server::~Server(){
-    while(!commands.empty()){
-        delete commands.back();
-        commands.pop_back();
-    }
 
     freeaddrinfo(result);
     closesocket(client_socket);
@@ -165,33 +128,25 @@ Server::~Server(){
     WSACleanup();
 }
 
-
-//* Shutdown
-bool ShutdownCommand::isCommand(const string& command){
-    return command == "shutdown";
-}
-void ShutdownCommand::execute(Server& server, const string& param){
-
-}
-
-
-//* Send file
-bool GetFileCommand::isCommand(const string& command){
-    return command == "getf";
-}
-void GetFileCommand::execute(Server& server, const string& param){
-    sendFile(server, param);
-}
-void GetFileCommand::sendFile(Server& server, const string& filename) {
-    std::ifstream file(filename.c_str(), std::ios::binary);
+//! Remember to delete couts
+bool sendFile(Server& server, const string& filepath) {
+    std::ifstream file(filepath.c_str(), std::ios::binary);
     SOCKET client_socket = server.getClientSocket();
+
+    string file_name;
+    int last_slash = filepath.rfind('\\');
+    if (last_slash != string::npos){
+        file_name = filepath.substr(last_slash + 1);
+    }
+    else file_name = filepath;
+
     if (!file) {
-        std::cerr << "Failed to open file: " << filename << std::endl;
+        std::cerr << "Failed to open file: " << filepath << std::endl;
         server.echo("Error");
-        return;
+        return false;
     }
 
-    server.echo("sending file");
+    server.echo(file_name);
     char send_buffer[DEFAULT_BUFLEN];
     while (file.read(send_buffer, DEFAULT_BUFLEN).gcount() > 0) {
         send(client_socket, send_buffer, static_cast<int>(file.gcount()), 0);
@@ -199,66 +154,5 @@ void GetFileCommand::sendFile(Server& server, const string& filename) {
     file.close();
     send(client_socket, send_buffer, 0, 0);
     cout << "file sent" << endl;
-}
-
-
-//* List file
-bool ListFileCommand::isCommand(const string& command){
-    return command == "listf";
-}
-void ListFileCommand::execute(Server& server, const string& param){
-    vector<string> v(listFile(param));
-    SOCKET& client_socket = server.getClientSocket();
-
-    server.echo("listing file");
-    for (auto file : v){
-        send(client_socket, (file + "\n").c_str(), file.length() + 1, 0);
-        cout << file << endl;
-    }
-    send(client_socket, "FILE_LISTED", 11, 0);
-}
-vector<string> ListFileCommand::listFile(const string& path){
-    string command("dir /a-d ");
-    command.append(path + " > listfile.txt");
-    system(command.c_str());
-
-    ifstream fin("listfile.txt");
-
-    if (!fin.is_open()){
-        cout << "cannot open file";
-    }
-
-    string temp;
-    //skipping the headers
-    for (int i = 0; i < 4; i++)
-        getline(fin, temp);
-
-    vector<string> files;
-    while(getline(fin, temp)){
-        files.push_back(temp);
-    }
-    fin.close();
-    files.pop_back();
-    files.pop_back();
-
-    return files;
-}
-
-//* Delete file
-bool DeleteFileCommand::isCommand(const string& command){
-    return command == "deletef";
-}
-
-void DeleteFileCommand::execute(Server& server, const string& param){
-    
-}
-
-
-int __cdecl main(void) {
-    Server server;
-    server.initialize();
-    if (server.listenForConnection() == 0)
-        server.listenForRequest();
-
-    return 0;
+    return true;
 }

@@ -1,4 +1,3 @@
-g++ -o server/server.exe server/server.cpp -lws2_32
-cd server
-server.exe
+g++ -o ./socket/server/server.exe ./socket/server/*.cpp -lws2_32
+.\socket\server\server.exe
 pause

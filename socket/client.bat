@@ -1,5 +1,4 @@
-cd client
-g++ -o client.exe client.cpp -lws2_32
+g++ -o .\socket\client\client.exe ./socket/client/*.cpp ./socket/client/gmailapi/*.cpp -lws2_32 -lcurl -I./lib/curl_8.10.1/include -I./lib/json/include -L./lib/curl_8.10.1/lib 
 set /p "ip=Input server IPv4 (127.0.0.1 on the same machine): "
-client.exe %ip%
+.\socket\client\client.exe %ip%
 pause

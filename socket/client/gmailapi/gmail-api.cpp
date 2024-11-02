@@ -19,7 +19,7 @@ Attachment::Attachment(string file_path) : file_path(file_path) {
 }
 
 void Attachment::readFile() {
-    if (!exist()) return;
+    if (exist()) return;
     ifstream fin (file_path, ios::binary);
     file_content = string(istreambuf_iterator<char>(fin), istreambuf_iterator<char>());
     fin.close();
@@ -38,7 +38,7 @@ string Attachment::getFileName() const {
 }
 
 bool Attachment::exist() const {
-    return (file_name.length() && file_content.length());
+    return (!file_name.empty() && !file_content.empty());
 }
 
 string Message::getID() const {
@@ -125,10 +125,31 @@ string Message::getEncodedMessage() const {
     return base64_encode(createMIME());
 }
 
-void GmailAPI::sendMessage(const Message& message) {
+string Message::getEncodedMessage(const Attachment& attachment) const {
+    return base64_encode(createMIME(attachment));
+}
+
+bool Message::isEmpty() const {
+    return (from.empty() && to.empty() && subject.empty() && body.empty());
+}
+
+void Message::clear() {
+    id = "";
+    thread_id = "";
+    from = "";
+    to = "";
+    subject = "";
+    body = "";
+}
+
+void GmailAPI::sendMessage(const Message& message, const string& thread_id) {
     string encoded_message = message.getEncodedMessage();
     
-    const string post_fields = R"({"raw": ")" + encoded_message + R"("})";
+    string post_fields;
+    if (thread_id.empty())
+        post_fields = R"({"raw": ")" + encoded_message + R"("})";
+    else
+        post_fields = R"({"threadId": ")" + thread_id + R"(","raw": ")" + encoded_message + R"("})";
 
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -139,10 +160,14 @@ void GmailAPI::sendMessage(const Message& message) {
     makeRequest(url, headers, post_fields);
 }
 
-void GmailAPI::sendMessage(const Message& message, const Attachment& attachment) {
+void GmailAPI::sendMessage(const Message& message, const Attachment& attachment, const string& thread_id) {
     string encoded_message = message.getEncodedMessage(attachment);
     
-    const string post_fields = R"({"raw": ")" + encoded_message + R"("})";
+    string post_fields;
+    if (thread_id.empty())
+        post_fields = R"({"raw": ")" + encoded_message + R"("})";
+    else
+        post_fields = R"({"threadId": ")" + thread_id + R"(","raw": ")" + encoded_message + R"("})";
 
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -153,27 +178,44 @@ void GmailAPI::sendMessage(const Message& message, const Attachment& attachment)
     makeRequest(url, headers, post_fields);
 }
 
-string GmailAPI::getLatestMessageID() {
+string GmailAPI::getLatestMessageID(const string& query) {
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
 
-    string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=1&includeSpamTrash=true";
+    string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=1&includeSpamTrash=true&q=\"" + query + '\"';
 
     string response = makeRequest(url, headers, "");
 
     json j = json::parse(response);
-    return j["messages"][0]["id"];
+    if (j.contains("messages")) return j["messages"][0]["id"];
+    else return "";
 }
 
-Message GmailAPI::getLatestMessage() {
+void GmailAPI::setMessageRead(const string& message_id) {
+    struct curl_slist *headers = NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+
+    string post_fields = R"({"removeLabelIds": ["UNREAD"]})";
+
+    string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + message_id + "/modify";
+
+    makeRequest(url, headers, post_fields);
+}
+
+Message GmailAPI::getLatestMessage(const string& query) {
     Message message;
+
+    string id = getLatestMessageID(query);
+    if (id.empty()) {
+        return message;
+    }
 
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
 
-    string id = getLatestMessageID();
     string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full";
 
     string response = makeRequest(url, headers, "");
@@ -187,8 +229,10 @@ Message GmailAPI::getLatestMessage() {
     for (auto header: response_headers) {
         if (header["name"] == "Delivered-To") message.setToEmail(header["value"]);
         if (header["name"] == "From") {
-            if (string(header["value"]).find('\u003c') != string::npos) message.setFromEmail(getStringBetween(string(header["value"]), "\u003c", "\u003e"));
-            else message.setFromEmail(header["value"]);
+            if (string(header["value"]).find('\u003c') != string::npos)
+                message.setFromEmail(getStringBetween(string(header["value"]), "\u003c", "\u003e"));
+            else
+                message.setFromEmail(header["value"]);
         }
         if (header["name"] == "Subject") message.setSubject(header["value"]);
     }

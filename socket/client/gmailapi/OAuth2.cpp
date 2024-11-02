@@ -121,7 +121,7 @@ void OAuth::writeTokenToFile() {
     fout.close();
 }
 
-OAuth::OAuth() : client_secret_file("client_secret.json"), token_file("token.txt") {
+OAuth::OAuth() : client_secret_file("socket/client/client_secret.json"), token_file("socket/client/token.txt") {
 
     json j;
     ifstream fin(client_secret_file);

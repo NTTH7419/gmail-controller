@@ -1,11 +1,9 @@
- Volume in drive C is OS
- Volume Serial Number is 006F-5D12
+ Volume in drive C is Windows-SSD
+ Volume Serial Number is 8A96-FB2B
 
- Directory of C:\Users\Admin\Downloads\socket
+ Directory of C:\Users\Lenovo\Documents\gmail-controller\socket\files
 
-10/26/2024  05:33 PM            56,273 client.exe
-10/24/2024  12:13 PM           120,593 concuconmeo.png
-09/07/2024  11:06 AM           120,593 memaybeo.png
-10/26/2024  05:33 PM            60,673 server.exe
-               4 File(s)        358,132 bytes
-               0 Dir(s)  100,982,554,624 bytes free
+01/11/2024  10:42           118.185 cool.jpg
+01/11/2024  10:42           169.632 memaybeo.png
+               2 File(s)        287.817 bytes
+               0 Dir(s)  12.036.755.456 bytes free

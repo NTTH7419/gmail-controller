@@ -39,11 +39,9 @@ class Message {
 		string createMIME(const Attachment& attachment) const;
 
 	public:
-		Message() : from(""), to(""), subject(""), body("") {}
+		Message() : id(""), thread_id(""), from(""), to(""), subject(""), body("") {}
 		Message(const string& from, const string& to, const string& subject, const string& body)
-			: from(from), to(to), subject(subject), body(body) {};
-		Message(const string& from, const string& to, const string& subject, const string& body)
-			: from(from), to(to), subject(subject), body(body) {};
+			: id(""), thread_id(""), from(from), to(to), subject(subject), body(body) {};
 		~Message() {}
 
 		string getEncodedMessage() const;
@@ -61,18 +59,20 @@ class Message {
 		void setToEmail(const string& to);
 		void setSubject(const string& subject);
 		void setBody(const string& body);
+
+		bool isEmpty() const;
+		void clear();
 };
 
 class GmailAPI {
 	private:
 		OAuth oauth;
 
-		string getLatestMessageID();
+		string getLatestMessageID(const string& query);
 
 	public:
-		void sendMessage(const Message& message);
-		void sendMessage(const Message& message, const Attachment& attachment);
-		Message getLatestMessage();
+		void sendMessage(const Message& message, const string& thread_id = "");
+		void sendMessage(const Message& message, const Attachment& attachment, const string& thread_id = "");
+		void setMessageRead(const string& message_id);
+		Message getLatestMessage(const string& query = "");
 };
-
- 
