@@ -41,12 +41,16 @@ bool Attachment::exist() const {
     return (!file_name.empty() && !file_content.empty());
 }
 
-string Message::getID() const {
-    return id;
+string Message::getGmailID() const {
+    return gmail_id;
 }
 
-string Message::getThreadID() const {
-    return thread_id;
+string Message::getMessageID() const {
+    return message_id;
+}
+
+string Message::getInReplyTo() const {
+    return in_reply_to;
 }
 
 string Message::getFromEmail() const {
@@ -65,12 +69,16 @@ string Message::getBody() const {
     return body;
 }
 
-void Message::setID(const string& id) {
-    this->id = id;
+void Message::setGmailID(const string& gmail_id) {
+    this->gmail_id = gmail_id;
 }
 
-void Message::setThreadID(const string& thread_id) {
-    this->thread_id = thread_id;
+void Message::setMessageID(const string& message_id) {
+    this->message_id = message_id;
+}
+
+void Message::setInReplyTo(const string& in_reply_to) {
+    this->in_reply_to = in_reply_to;
 }
 
 void Message::setFromEmail(const string& from) {
@@ -89,40 +97,43 @@ void Message::setBody(const string& body) {
     this->body = body;
 }
 
-string Message::createMIME() const {
-    string MIME_message =
-            "From: " + from + "\r\n"
-            "To: " + to + "\r\n"
-            "Subject: " + subject + "\r\n"
-            "Content-Type: text/plain; charset=UTF-8\r\n"
-            "\r\n" // Empty line between headers and body
-            + body + "\r\n";
-
-    return MIME_message;
-}
-
 string Message::createMIME(const Attachment& attachment) const {
-    string MIME_message =
-            "MIME-Version: 1.0\r\n"
-            "To: " + to + "\r\n"
-            "From: " + from + "\r\n"
-            "Subject: " + subject + "\r\n"
-            "Content-Type: multipart/mixed; boundary=\"frontier\"\r\n\r\n"
-            "--frontier\r\n"
-            "Content-Type: text/plain; charset=\"UTF-8\"\r\n\r\n"
-            + body + "\r\n\r\n"
-            "--frontier\r\n"
-            "Content-Type: application/octet-stream\r\n"
-            "Content-Disposition: attachment; filename=\"" + attachment.getFileName() + "\"\r\n"
-            "Content-Transfer-Encoding: base64\r\n\r\n"
-            + attachment.getEncodedFileContent() + "\r\n\r\n"
-            "--frontier--";
-    
-    return MIME_message;
-}
+    string boundary = "boundary_string";
+    stringstream mimeMessage;
 
-string Message::getEncodedMessage() const {
-    return base64_encode(createMIME());
+    // Common headers for all message types
+    mimeMessage << "MIME-Version: 1.0\r\n";
+    mimeMessage << "To: " << to << "\r\n";
+    mimeMessage << "From: " << from << "\r\n";
+    mimeMessage << "Subject: " << subject << "\r\n";
+
+    // Add reply headers if present
+    if (!in_reply_to.empty()) {
+        mimeMessage << "In-Reply-To: " << in_reply_to << "\r\n";
+    }
+
+    // Determine message type based on whether there's an attachment
+    if (!attachment.exist()) {
+        // Case 1: Normal message or reply without attachment
+        mimeMessage << "Content-Type: text/plain; charset=\"UTF-8\"\r\n\r\n";
+        mimeMessage << body << "\r\n";
+    } else {
+        // Case 2: Message with attachment or reply with attachment
+        mimeMessage << "Content-Type: multipart/mixed; boundary=\"" << boundary << "\"\r\n\r\n";
+        mimeMessage << "--" << boundary << "\r\n";
+        mimeMessage << "Content-Type: text/plain; charset=\"UTF-8\"\r\n\r\n";
+        mimeMessage << body << "\r\n\r\n";
+
+        // Add the attachment
+        mimeMessage << "--" << boundary << "\r\n";
+        mimeMessage << "Content-Type: application/octet-stream\r\n";
+        mimeMessage << "Content-Disposition: attachment; filename=\"" << attachment.getFileName() << "\"\r\n";
+        mimeMessage << "Content-Transfer-Encoding: base64\r\n\r\n";
+        mimeMessage << attachment.getEncodedFileContent() << "\r\n";
+        mimeMessage << "--" << boundary << "--\r\n";
+    }
+
+    return mimeMessage.str();
 }
 
 string Message::getEncodedMessage(const Attachment& attachment) const {
@@ -134,40 +145,18 @@ bool Message::isEmpty() const {
 }
 
 void Message::clear() {
-    id = "";
-    thread_id = "";
+    gmail_id = "";
+    in_reply_to = "";
     from = "";
     to = "";
     subject = "";
     body = "";
 }
 
-void GmailAPI::sendMessage(const Message& message, const string& thread_id) {
-    string encoded_message = message.getEncodedMessage();
-    
-    string post_fields;
-    if (thread_id.empty())
-        post_fields = R"({"raw": ")" + encoded_message + R"("})";
-    else
-        post_fields = R"({"threadId": ")" + thread_id + R"(","raw": ")" + encoded_message + R"("})";
-
-    struct curl_slist *headers = NULL;
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
-
-    string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
-
-    makeRequest(url, headers, post_fields);
-}
-
-void GmailAPI::sendMessage(const Message& message, const Attachment& attachment, const string& thread_id) {
+void GmailAPI::sendMessage(const Message& message, const Attachment& attachment) {
     string encoded_message = message.getEncodedMessage(attachment);
     
-    string post_fields;
-    if (thread_id.empty())
-        post_fields = R"({"raw": ")" + encoded_message + R"("})";
-    else
-        post_fields = R"({"threadId": ")" + thread_id + R"(","raw": ")" + encoded_message + R"("})";
+    string post_fields = R"({"raw": ")" + encoded_message + R"("})";
 
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -183,7 +172,8 @@ string GmailAPI::getLatestMessageID(const string& query) {
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
 
-    string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=1&includeSpamTrash=true&q=\"" + query + '\"';
+    string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+           url += "?maxResults=1&includeSpamTrash=true&q=" + urlEncode(query);
 
     string response = makeRequest(url, headers, "");
 
@@ -192,7 +182,7 @@ string GmailAPI::getLatestMessageID(const string& query) {
     else return "";
 }
 
-void GmailAPI::setMessageRead(const string& message_id) {
+void GmailAPI::markAsRead(const string& message_id) {
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
@@ -222,8 +212,7 @@ Message GmailAPI::getLatestMessage(const string& query) {
 
     json j = json::parse(response);
 
-    message.setID(j["id"]);
-    message.setThreadID(j["threadId"]);
+    message.setGmailID(j["id"]);
 
     auto response_headers = j["payload"]["headers"];
     for (auto header: response_headers) {
@@ -235,9 +224,17 @@ Message GmailAPI::getLatestMessage(const string& query) {
                 message.setFromEmail(header["value"]);
         }
         if (header["name"] == "Subject") message.setSubject(header["value"]);
+        if (header["name"] == "Message-ID") message.setMessageID(header["value"]);
     }
 
     message.setBody(trim(base64_decode(j["payload"]["parts"][0]["body"]["data"])));
 
     return message;
+}
+
+void GmailAPI::replyMessage(const Message& message, Message& reply_content, const Attachment& attachment) {
+    reply_content.setInReplyTo(message.getMessageID());
+    reply_content.setFromEmail(message.getToEmail());
+    reply_content.setToEmail(message.getFromEmail());
+    sendMessage(reply_content, attachment);
 }

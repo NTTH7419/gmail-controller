@@ -12,13 +12,19 @@ int __cdecl main(int argc, char **argv) {
     c.connectToServer(argv[1]);
     
 	ProcessCommand pc;
-	while (!pc.getLatestMessage()) {
-		cout << "No new command, retry after 3 secs" << endl;
-		Sleep(3000);		
-	}
+
+    while (true) {
+        if (!pc.getLatestMessage()) {
+    		cout << "No new command, retry after 3 secs" << endl;
+    		Sleep(3000);
+            continue;	
+    	}
+    	
+    	pc.executeCommand(c);
+    }
 	
-	pc.executeCommand(c);
-	pc.sendResponse();
+
+    // pc.process(c);
 
     return 0;
 }

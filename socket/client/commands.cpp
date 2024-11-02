@@ -4,10 +4,10 @@ ProcessCommand::ProcessCommand() : message(), response() {
     commands.insert({{"shutdown", new ShutdownCommand},
                      //{"restart", new RestartCommand},
                      //{"listapp", new ListAppCommand},
-                     //{"startapp", new StartAppCommand}
+                     //{"startapp", new StartAppCommand},
                      //{"stopapp", new StopAppCommand},
                      //{"listser", new ListSerCommand},
-                     //{"startser", new StartSerCommand}
+                     //{"startser", new StartSerCommand},
                      //{"stopser", new StopSerCommand},
                      {"listfile", new ListFileCommand},
                      {"getfile", new GetFileCommand},
@@ -54,32 +54,32 @@ void ProcessCommand::executeCommand(Client& client) {
     if (message.isEmpty()) return;
 	string command = getCommand();
 	string param = getParameter();
-	string send_string = command + '\n' + param;
+	string send_string = command + "\n" + param;
 	SOCKET server_socket = client.getServerSocket();
     
 	send(server_socket, send_string.c_str(), send_string.length(), 0);
     cout << "command sent: " << send_string << endl;
 
     commands[getCommand()]->execute(client, getParameter());
+    
+    sendResponse();
     message.clear();
 }
 
 bool ProcessCommand::getLatestMessage() {
-	string query = "from:phungngoctuan5@gmail.com";
+	string query = "from:phungngoctuan5@gmail.com is:unread";
     message = gmailapi.getLatestMessage(query);
     if (message.isEmpty()) return false;
-    gmailapi.setMessageRead(message.getID());
+    gmailapi.markAsRead(message.getGmailID());
     return true;
 }
 
-void ProcessCommand::sendResponse() {
+void ProcessCommand::sendResponse(const Attachment& attachment) {
     Message response;
-    response.setFromEmail(message.getToEmail());
-    response.setToEmail(message.getFromEmail());
-    response.setSubject(message.getSubject());
+    response.setSubject("Re: " + message.getSubject());
     response.setBody("Command executed");
 
-    gmailapi.sendMessage(response, message.getThreadID());
+    gmailapi.replyMessage(message, response, attachment);
 }
 
 //* for testing only
@@ -110,7 +110,7 @@ void ProcessCommand::process(Client& client){
 
 //*Shutdown Command
 void ShutdownCommand::execute(Client& client, const string& param){
-    cout << "Shutting down server";
+    cout << "Shutting down server from client" << endl;
 }
 
 //*Get File Command
@@ -119,9 +119,10 @@ void GetFileCommand::execute(Client& client, const string& param){
 }
 
 //*Delete File Command
-void DeleteFileCommand::execute(Client& client, const string& filepath){
-    system(("del " + filepath).c_str());
-    cout << "deleted file at: " << filepath << endl;
+void DeleteFileCommand::execute(Client& client, const string& param){
+    char buffer[DEFAULT_BUFLEN] = {'\0'};
+    recv(client.getServerSocket(), buffer, DEFAULT_BUFLEN, 0);
+    cout << buffer;
 }
 
 //* List File Command

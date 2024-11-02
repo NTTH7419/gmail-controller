@@ -21,7 +21,7 @@ class ProcessCommand {
         ~ProcessCommand();
         void executeCommand(Client& client);
         bool getLatestMessage();
-        void sendResponse();
+        void sendResponse(const Attachment& attachment = {});
 
 		void process(Client& c); //* for testing only  
 };

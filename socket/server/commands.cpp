@@ -5,10 +5,10 @@ ReceiveCommand::ReceiveCommand() : command(), parameter() {
     commands.insert({{"shutdown", new ShutdownCommand},
                      //{"restart", new RestartCommand},
                      //{"listapp", new ListAppCommand},
-                     //{"startapp", new StartAppCommand}
+                     //{"startapp", new StartAppCommand},
                      //{"stopapp", new StopAppCommand},
                      //{"listser", new ListSerCommand},
-                     //{"startser", new StartSerCommand}
+                     //{"startser", new StartSerCommand},
                      //{"stopser", new StopSerCommand},
                      {"listfile", new ListFileCommand},
                      {"getfile", new GetFileCommand},
@@ -34,9 +34,13 @@ ReceiveCommand::~ReceiveCommand() {
 void ReceiveCommand::getLatestCommand(Server& server) {
 	string receive_string;
 	server.receive(receive_string);
+
 	int sep = receive_string.find('\n');
-	command = receive_string.substr(0, sep);
-	parameter = receive_string.substr(sep);
+
+    if (sep != string::npos) {
+        command = receive_string.substr(0, sep);
+    	parameter = receive_string.substr(sep + 1);
+    }
 }
 
 void ReceiveCommand::executeCommand(Server& server) {
@@ -72,7 +76,7 @@ void ReceiveCommand::process(Server& server) {
 
 //* Shutdown
 void ShutdownCommand::execute(Server& server, const string& param){
-    cout << "Shutting down server";
+    cout << "Shutting down server" << endl;
 }
 
 //* Send file
@@ -122,5 +126,6 @@ vector<string> ListFileCommand::listFile(const string& path){
 
 //* Delete file
 void DeleteFileCommand::execute(Server& server, const string& param){
-    
+    system(("del " + param).c_str());
+    server.echo("File deleted");
 }

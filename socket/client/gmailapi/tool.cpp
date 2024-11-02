@@ -45,3 +45,17 @@ string trim(string s) {
     s.erase(s.find_last_not_of(unwanted_char) + 1);
     return s;
 }
+
+string urlEncode(const string& value) {
+    ostringstream encoded;
+    for (unsigned char c : value) {
+        // Check if character is alphanumeric or safe
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            encoded << c;
+        } else {
+            // Percent-encode the character
+            encoded << '%' << setw(2) << setfill('0') << hex << uppercase << int(c);
+        }
+    }
+    return encoded.str();
+}

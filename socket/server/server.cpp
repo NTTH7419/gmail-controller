@@ -89,17 +89,15 @@ int Server::acceptConnection(){
 
 int Server::receive(string &message){
     int bytes_received = recv(client_socket, receive_buffer, receive_buffer_len, 0);
-    if (bytes_received > 0) {
+    if (bytes_received >= 0) {
         char* receive_message = new char[bytes_received + 1] {'\0'};
         strncpy(receive_message, receive_buffer, bytes_received);
-        message = string(receive_message); 
+        message = string(receive_message);
         delete [] receive_message;
         cout << "message received: " << message << endl;
     } 
     else {
         cout << "receive message failed, error: " << WSAGetLastError() << endl;
-        closesocket(client_socket);
-        WSACleanup();
     }
 
     return bytes_received;

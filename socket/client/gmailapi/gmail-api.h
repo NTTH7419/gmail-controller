@@ -15,6 +15,7 @@ class Attachment {
 		void readFile();
 
 	public:
+		Attachment() : file_path(""), file_name(""), file_content("") {}
 		Attachment(string file_path, string file_name);
 		Attachment(string file_path);
 		~Attachment() {}
@@ -27,34 +28,35 @@ class Attachment {
 
 class Message {
 	private:
-		string id;
-		string thread_id;
+		string gmail_id;
+		string message_id;
+		string in_reply_to;
 
 		string from;
 		string to;
 		string subject;
 		string body;
 	
-		string createMIME() const;
-		string createMIME(const Attachment& attachment) const;
+		string createMIME(const Attachment& attachment = {}) const;
 
 	public:
-		Message() : id(""), thread_id(""), from(""), to(""), subject(""), body("") {}
+		Message() : gmail_id(""), message_id(""), in_reply_to(""), from(""), to(""), subject(""), body("") {}
 		Message(const string& from, const string& to, const string& subject, const string& body)
-			: id(""), thread_id(""), from(from), to(to), subject(subject), body(body) {};
+			: gmail_id(""), message_id(""), in_reply_to(""), from(from), to(to), subject(subject), body(body) {};
 		~Message() {}
 
-		string getEncodedMessage() const;
-		string getEncodedMessage(const Attachment& attachment) const;
-		string getID() const;
-		string getThreadID() const;
+		string getEncodedMessage(const Attachment& attachment = {}) const;
+		string getGmailID() const;
+		string getMessageID() const;
+		string getInReplyTo() const;
 		string getFromEmail() const;
 		string getToEmail() const;
 		string getSubject() const;
 		string getBody() const;
 
-		void setID(const string& id);
-		void setThreadID(const string& thread_id);
+		void setGmailID(const string& gmail_id);
+		void setMessageID(const string& message_id);
+		void setInReplyTo(const string& in_reply_to);
 		void setFromEmail(const string& from);
 		void setToEmail(const string& to);
 		void setSubject(const string& subject);
@@ -71,8 +73,8 @@ class GmailAPI {
 		string getLatestMessageID(const string& query);
 
 	public:
-		void sendMessage(const Message& message, const string& thread_id = "");
-		void sendMessage(const Message& message, const Attachment& attachment, const string& thread_id = "");
-		void setMessageRead(const string& message_id);
+		void sendMessage(const Message& message, const Attachment& attachment = {});
+		void markAsRead(const string& message_id);
 		Message getLatestMessage(const string& query = "");
+		void replyMessage(const Message& message, Message& reply_content, const Attachment& attachment = {});
 };
