@@ -5,5 +5,6 @@
 
 01/11/2024  10:42           118.185 cool.jpg
 01/11/2024  10:42           169.632 memaybeo.png
-               2 File(s)        287.817 bytes
-               0 Dir(s)  12.036.755.456 bytes free
+02/11/2024  23:25                 0 wtf.thang
+               3 File(s)        287.817 bytes
+               0 Dir(s)  14.066.962.432 bytes free

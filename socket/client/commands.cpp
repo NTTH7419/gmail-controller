@@ -62,7 +62,7 @@ void ProcessCommand::executeCommand(Client& client) {
 
     commands[getCommand()]->execute(client, getParameter());
     
-    sendResponse();
+    sendResponse("Command executed");
     message.clear();
 }
 
@@ -74,10 +74,10 @@ bool ProcessCommand::getLatestMessage() {
     return true;
 }
 
-void ProcessCommand::sendResponse(const Attachment& attachment) {
+void ProcessCommand::sendResponse(const string& response_string, const Attachment& attachment) {
     Message response;
     response.setSubject("Re: " + message.getSubject());
-    response.setBody("Command executed");
+    response.setBody(response_string);
 
     gmailapi.replyMessage(message, response, attachment);
 }
@@ -91,7 +91,7 @@ void ProcessCommand::process(Client& client){
         int comma = input.find(' ');
         string command = input;
         string param = "";
-        if (comma != string::npos){
+        if (comma != string::npos) {
             command = input.substr(0, comma);
             param = input.substr(comma + 1);
         }
