@@ -166,7 +166,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam){
 }
 
 void ListAppCommand::execute(Server& server, const string& param){
-    ofstream outFile("runningAppList.txt");
+    ofstream outFile("temp\\runningAppList.txt");
     if (!outFile.is_open()) {
         cerr << "Unable to open file for writing.\n";
         return;
@@ -188,6 +188,7 @@ void ListAppCommand::execute(Server& server, const string& param){
     if (!fin.is_open()){
         cout << "cannot open file";
         server.echo("Error");
+        return;
     }
     server.echo("listing applications");
 
