@@ -6,13 +6,13 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <fstream>
-#include <istream>
-#include <ostream>
+#include <tchar.h>
+#include <psapi.h>
 #include <vector>
 
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
@@ -42,10 +42,12 @@ private:
 public:
     Client();
     void initialize();
+    void receiveAvailableIP();
     SOCKET& getServerSocket();
-    void connectToServer(char* address);
+    void connectToServer(const char* address);
+    string receiveResponse();
     ~Client();
 };
 
 
-bool receiveFile(Client& client);
+void receiveFile(Client& client);

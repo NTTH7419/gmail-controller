@@ -1,19 +1,20 @@
 #include "commands.h"
 
+
 ProcessCommand::ProcessCommand() : message(), response() {
     commands.insert({{"shutdown", new ShutdownCommand},
-                     //{"restart", new RestartCommand},
-                     //{"listapp", new ListAppCommand},
-                     //{"startapp", new StartAppCommand},
-                     //{"stopapp", new StopAppCommand},
+                     {"restart", new RestartCommand},
+                     {"listapp", new ListAppCommand},
+                     {"startapp", new StartAppCommand},
+                     {"stopapp", new StopAppCommand},
                      //{"listser", new ListSerCommand},
                      //{"startser", new StartSerCommand},
                      //{"stopser", new StopSerCommand},
                      {"listfile", new ListFileCommand},
                      {"getfile", new GetFileCommand},
                      {"deletefile", new DeleteFileCommand},
-                     //{"screenshot", new ScreenshotCommand},
-                     //{"takephoto", new TakePhotoCommand},
+                     {"screenshot", new ScreenshotCommand},
+                    //  {"takephoto", new TakePhotoCommand},
                      //{"startrecord", new StartRecordCommand},
                      //{"stoprecord", new StopRecordCommand},
                      //{"record", new RecordCommand},
@@ -67,7 +68,8 @@ void ProcessCommand::executeCommand(Client& client) {
 }
 
 bool ProcessCommand::getLatestMessage() {
-	string query = "from:phungngoctuan5@gmail.com is:unread";
+	// string query = "from:phungngoctuan5@gmail.com is:unread";
+    string query = "from:quangthangngo181@gmail.com is:unread";
     message = gmailapi.getLatestMessage(query);
     if (message.isEmpty()) return false;
     gmailapi.markAsRead(message.getGmailID());
@@ -156,4 +158,77 @@ void ListFileCommand::execute(Client& client, const string& param){
     while(byte_received > 0);
 
     cout << "file listed successfully !" << endl;
+}
+
+void ListAppCommand::execute(Client& client, const string& param){
+    cout << "listing running applications: " << endl;
+    const int buffer_len = DEFAULT_BUFLEN;
+    char buffer[buffer_len];
+    SOCKET& server_socket = client.getServerSocket();
+
+    int byte_received = recv(server_socket, buffer, buffer_len, 0);
+    buffer[byte_received] = '\0';
+
+    if (strcmp(buffer, "listing applications") != 0){
+        cout << "Error! Initial response not received!" << endl;
+        return;
+    }
+
+    cout << "currently running applications: " << endl;
+    char* stop;
+    do{
+        byte_received = recv(server_socket, buffer, buffer_len, 0);
+        buffer[byte_received] = '\0';
+        stop = strstr(buffer, "APP_LISTED");
+        if(stop != NULL){
+            buffer[stop - buffer] = '\0';
+            cout << buffer;
+            break;
+        }
+        cout << buffer;
+    }
+    while(byte_received > 0);
+
+    cout << "applications listed successfully !" << endl;
+
+}
+
+void StartAppCommand::execute(Client& client, const string& param){
+    cout << "Starting application..." << endl;
+    string status = client.receiveResponse();
+
+    if (status == "success"){
+        cout << "Application started successfully" << endl;
+    }
+    else if (status == "failure") {
+        cout << "Failed to start application" << endl;
+    }
+    else{
+        cout << "An error has occured" << endl;
+    }
+}
+
+void StopAppCommand::execute(Client& client, const string& param){
+    cout << "Stopping applications..." << endl;
+    string status = client.receiveResponse();
+
+    if (status == "success"){
+        cout << "Application stopped successfully" << endl;
+    }
+    else if (status == "failure") {
+        cout << "Failed to stop application" << endl;
+    }
+    else{
+        cout << "An error has occured" << endl;
+    }
+}
+
+void RestartCommand::execute(Client& client, const string& param){
+    cout << "restarting server..." << endl;
+}
+
+
+void ScreenshotCommand::execute(Client& client, const string& param){
+    cout << "taking a screenshot" << endl;
+    receiveFile(client);
 }

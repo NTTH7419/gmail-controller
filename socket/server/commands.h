@@ -1,6 +1,16 @@
 #include "server.h"
 #include <unordered_map>
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
+using namespace Gdiplus;
 
+class Command;
+class ReceiveCommand;
+class ShutdownCommand;
+class ListFileCommand;
+class GetFileCommand;
+class ListAppCommand;
+class StartAppCommand;
 class Command{
 public:
     virtual void execute(Server& server, const string& param) = 0;
@@ -45,4 +55,31 @@ private:
     void deleteFile(Server& server, const string& filename);
 public:
     void execute(Server& server, const string& param) override;
+};
+
+class ListAppCommand : public Command{
+    public:
+        void execute(Server& server, const string& param) override;
+};
+
+
+class StartAppCommand : public Command{
+    public:
+        void execute(Server& server, const string& param) override;
+};
+
+
+class StopAppCommand : public Command{
+    public:
+        void execute(Server& server, const string& param) override;
+};
+
+class RestartCommand : public Command{
+    public:
+        void execute(Server& server, const string& param) override;
+};
+
+class ScreenshotCommand : public Command{
+    public:
+        void execute(Server& server, const string& param) override;
 };

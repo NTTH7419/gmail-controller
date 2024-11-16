@@ -1,5 +1,16 @@
+
 #include "client.h"
 #include "gmailapi/gmail-api.h"
+#pragma comment(lib, "Psapi.lib")
+
+class Command;
+class ProcessCommand;
+class ShutdownCommand;
+class ListFileCommand;
+class GetFileCommand;
+class DeleteFileCommand;
+class ListAppCommand;
+class StartAppCommand;
 
 class Command{
 public:
@@ -48,5 +59,31 @@ public:
 
 class DeleteFileCommand : public Command{
 public:
+    void execute(Client& client, const string& param) override;
+};
+
+
+class ListAppCommand : public Command{
+public:
+    void execute(Client& client, const string& param) override;
+};
+
+class StartAppCommand : public Command{
+public: 
+    void execute(Client& client, const string& param) override;
+};
+
+class StopAppCommand : public Command{
+public: 
+    void execute(Client& client, const string& param) override;
+};
+
+class RestartCommand : public Command{
+public: 
+    void execute(Client& client, const string& param) override;
+};
+
+class ScreenshotCommand : public Command{
+public: 
     void execute(Client& client, const string& param) override;
 };

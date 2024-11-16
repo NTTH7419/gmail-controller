@@ -1,9 +1,0 @@
- Volume in drive C is Windows-SSD
- Volume Serial Number is 8A96-FB2B
-
- Directory of C:\Users\Lenovo\Documents\gmail-controller\socket\files
-
-01/11/2024  10:42           118.185 cool.jpg
-01/11/2024  10:42           169.632 memaybeo.png
-               2 File(s)        287.817 bytes
-               0 Dir(s)  12.036.755.456 bytes free

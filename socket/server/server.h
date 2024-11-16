@@ -7,18 +7,19 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <iostream>
 #include <string.h>
 #include <string>
-#include <istream>
-#include <ostream>
 #include <fstream>
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <tchar.h>
+#include <psapi.h>
+#include "shellapi.h"
 
 #pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Psapi.lib")
 
 #define DEFAULT_BUFLEN 1024
 #define DEFAULT_PORT "55555"
@@ -39,15 +40,21 @@ private:
     int receive_buffer_len = DEFAULT_BUFLEN;
     SOCKET server_socket = INVALID_SOCKET;
     SOCKET client_socket = INVALID_SOCKET;
-public:
-    Server();
-    void initialize();
+
+    string ip;
+    char hostname[256];
+    
     int createAddressInfo();
     int createSocket();
     int bindSocket();
-    int listenForConnection();
-    void listenForRequest();
     int acceptConnection();
+    int getIP();
+
+public:
+    Server();
+    void initialize();
+    int listenForConnection();
+    void broadcastIP();
 
     SOCKET& getClientSocket();
     int process(string);
@@ -56,4 +63,4 @@ public:
     ~Server();
 };
 
-bool sendFile(Server& server, const string& filepath);
+void sendFile(Server& server, const string& filepath);

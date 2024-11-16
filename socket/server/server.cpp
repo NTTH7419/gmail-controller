@@ -19,7 +19,41 @@ void Server::initialize(){
 
     freeaddrinfo(result);
     cout << "Initialization completed!" << endl;
+    cout << "Server IP address: " << ip << endl;
+    broadcastIP();
 }
+
+void Server::broadcastIP(){
+    SOCKET udp_send = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (udp_send == INVALID_SOCKET) {
+        cerr << "UDP socket creation failed." << endl;
+        return;
+    }
+
+    BOOL broadcast = TRUE;
+    if (setsockopt(udp_send, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast)) == SOCKET_ERROR){
+        std::cerr << "Set broadcast option failed." << std::endl;
+        closesocket(udp_send);
+        return;
+    }
+
+    sockaddr_in broadcastAddr;
+    broadcastAddr.sin_family = AF_INET;
+    broadcastAddr.sin_port = 6666;
+    broadcastAddr.sin_addr.s_addr = inet_addr("255.255.255.255");
+
+    string server_info = string(hostname) + ": " + ip;
+
+    if (sendto(udp_send, server_info.c_str(), server_info.length(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) == SOCKET_ERROR) {
+        cerr << "Broadcast failed: " << WSAGetLastError() << endl;
+    }
+
+    cout << "IP broadcasted successfully" << endl;
+    closesocket(udp_send);
+
+}
+
 
 int Server::createAddressInfo(){
     ZeroMemory(&hints, sizeof (hints));
@@ -28,12 +62,23 @@ int Server::createAddressInfo(){
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-    int error = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+    
+    if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR) {
+        cerr << "Error getting hostname: " << WSAGetLastError() << endl;
+        ip = "";
+        return 1;
+    }
+
+    int error = getaddrinfo(hostname, DEFAULT_PORT, &hints, &result);
     if (error != 0) {
         cout << "Get address failed, error: " << error << endl;
         WSACleanup();
         return error;
     }
+
+    struct sockaddr_in* addr = (struct sockaddr_in*)result->ai_addr;
+    ip = inet_ntoa(addr->sin_addr);
+
     cout << "Get address successfully! " << endl;
     return error;
 }
@@ -62,7 +107,7 @@ int Server::bindSocket(){
 }
 
 int Server::listenForConnection(){
-    if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR) {
+    if (listen(server_socket, 1) == SOCKET_ERROR) {
         cout << "listen for connection failed, error: " << WSAGetLastError() << endl;
         closesocket(server_socket);
         return 1;
@@ -114,8 +159,6 @@ void Server::echo(const string& message){
         cout << "Failed to send a response to the client, error: " << WSAGetLastError() << endl;
         return;
     }
-
-    cout << "message sent: " << message << endl;
 }
 
 Server::~Server(){
@@ -127,8 +170,7 @@ Server::~Server(){
 }
 
 //! Remember to delete couts
-bool sendFile(Server& server, const string& filepath) {
-    std::ifstream file(filepath.c_str(), std::ios::binary);
+void sendFile(Server& server, const string& filepath) {
     SOCKET client_socket = server.getClientSocket();
 
     string file_name;
@@ -137,20 +179,24 @@ bool sendFile(Server& server, const string& filepath) {
         file_name = filepath.substr(last_slash + 1);
     }
     else file_name = filepath;
-
+    cout << file_name << endl;
+    ifstream file(filepath.c_str(), ios::binary);
     if (!file) {
-        std::cerr << "Failed to open file: " << filepath << std::endl;
-        server.echo("Error");
-        return false;
+        cerr << "Failed to open file: " << filepath << endl;
+        server.echo("error");
+        return;
     }
 
     server.echo(file_name);
-    char send_buffer[DEFAULT_BUFLEN];
-    while (file.read(send_buffer, DEFAULT_BUFLEN).gcount() > 0) {
+
+    const int buff_len = DEFAULT_BUFLEN;
+    char send_buffer[buff_len];
+    while (file.read(send_buffer, buff_len).gcount() > 0) {
         send(client_socket, send_buffer, static_cast<int>(file.gcount()), 0);
     }
     file.close();
+
     send(client_socket, send_buffer, 0, 0);
     cout << "file sent" << endl;
-    return true;
+    
 }
