@@ -46,7 +46,7 @@ string OAuth::getTokenResponse(const string& auth_code) {
                              "&redirect_uri=" + credential.redirect_uri +
                              "&grant_type=authorization_code";
 
-    string token_response = makeRequest(credential.token_uri, NULL, post_fields);
+    string token_response = makeRequest(credential.token_uri, NULL, post_fields, "POST").body;
     
     return token_response;
 }
@@ -101,7 +101,7 @@ void OAuth::refreshToken() {
                          "&client_secret=" + credential.client_secret +
                          "&grant_type=refresh_token";
 
-    string token_response = makeRequest(url, NULL, post_fields);
+    string token_response = makeRequest(url, NULL, post_fields, "POST").body;    
 
     json j = json::parse(token_response);
     if (j.contains("access_token")) {
@@ -121,7 +121,7 @@ void OAuth::writeTokenToFile() {
     fout.close();
 }
 
-OAuth::OAuth() : client_secret_file("socket/client/client_secret.json"), token_file("socket/client/token.txt") {
+OAuth::OAuth() : client_secret_file("client_secret.json"), token_file("token.txt") {
 
     json j;
     ifstream fin(client_secret_file);

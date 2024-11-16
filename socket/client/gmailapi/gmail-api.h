@@ -11,11 +11,12 @@ class Attachment {
 		string file_path;
 		string file_name;
 		string file_content;
+		int file_size;
 
 		void readFile();
 
 	public:
-		Attachment() : file_path(""), file_name(""), file_content("") {}
+		Attachment() : file_path(""), file_name(""), file_content(""), file_size(0) {}
 		Attachment(string file_path, string file_name);
 		Attachment(string file_path);
 		~Attachment() {}
@@ -23,6 +24,7 @@ class Attachment {
 		void setFileName(const string& file_name);
 		string getEncodedFileContent() const;
 		string getFileName() const;
+		int getFileSize() const;
 		bool exist() const;
 };
 
@@ -45,7 +47,7 @@ class Message {
 			: gmail_id(""), message_id(""), in_reply_to(""), from(from), to(to), subject(subject), body(body) {};
 		~Message() {}
 
-		string getEncodedMessage(const Attachment& attachment = {}) const;
+		string getMessage(const Attachment& attachment = {}) const;
 		string getGmailID() const;
 		string getMessageID() const;
 		string getInReplyTo() const;
@@ -71,6 +73,8 @@ class GmailAPI {
 		OAuth oauth;
 
 		string getLatestMessageID(const string& query);
+		void sendMessageWithAttachment(const Message& message, const Attachment& attachment);
+		void sendMessageWithoutAttachment(const Message& message);
 
 	public:
 		void sendMessage(const Message& message, const Attachment& attachment = {});

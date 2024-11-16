@@ -1,24 +1,45 @@
 #include "tool.h"
 
-size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
-    ((string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
+string HTTPResponse::getHeader(const string& name) {
+    string value;
+    int pos = headers.find(name);
+    if (pos == string::npos) return value;
+    int pos2 = headers.find('\n', pos);
+    if (pos2 == string::npos) return value;
+    value = trim(headers.substr(pos + name.size() + 2, pos2 - (pos + name.size() + 2)));
+    return value;
 }
 
-string makeRequest(const string& request_url, struct curl_slist *headers, const string& post_fields) {
+size_t writeCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    size_t content_size = size * nmemb;
+    ((string*)userp)->append((char*)contents, content_size);
+    return content_size;
+}
+
+size_t headerCallback(char* buffer, size_t size, size_t nitems, void* headers) {
+    size_t headerSize = size * nitems;
+    ((string*)headers)->append(buffer, headerSize);
+    return headerSize;
+}
+
+HTTPResponse makeRequest(const string& request_url, curl_slist *headers, const string& post_fields, const string& type) {
     CURL *curl;
     CURLcode res;
-    string response;
+    HTTPResponse response;
+
     curl = curl_easy_init();
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, request_url.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        curl_easy_setopt(curl, CURLOPT_CAINFO, "socket/client/cacert.pem");
+        curl_easy_setopt(curl, CURLOPT_CAINFO, "cacert.pem");
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, type.c_str());
         if (headers) curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        if (post_fields.length()) curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields.c_str());
+        if (!post_fields.empty()) curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields.c_str());
 
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &(response.body));
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, headerCallback);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &(response.headers));
 
         res = curl_easy_perform(curl);
         if (res != CURLE_OK)

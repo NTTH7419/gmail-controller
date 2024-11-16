@@ -10,8 +10,14 @@
 using namespace std;
 using json = nlohmann::json;
 
-size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
-string makeRequest(const string& request_url, struct curl_slist *headers, const string& postFields);
+struct HTTPResponse {
+	string headers;
+	string body;
+	
+	string getHeader(const string& name);
+};
+
+HTTPResponse makeRequest(const string& request_url, curl_slist *headers, const string& postFields, const string& type);
 string getStringBetween(const string& str, const string& begin, const string& end);
 string trim(string s);
 string urlEncode(const string& value);

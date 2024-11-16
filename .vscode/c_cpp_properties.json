@@ -3,9 +3,9 @@
         {
             "name": "Win64",
             "includePath": [
-                "${workspaceFolder}/lib/curl_8.10.1/**",
-                "${workspaceFolder}/lib/curl_8.10.1/include/**", // path to cURL headers
-                "${workspaceFolder}/lib/json/include/**"
+                "${workspaceFolder}/socket/client/lib/curl_8.10.1/**",
+                "${workspaceFolder}/socket/client/lib/curl_8.10.1/include/**", // path to cURL headers
+                "${workspaceFolder}/socket/client/lib/json/include/**"
 
             ],
             "defines": [],
