@@ -174,9 +174,7 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     headers = curl_slist_append(headers, "X-Upload-Content-Type: message/rfc822");
     headers = curl_slist_append(headers, ("X-Upload-Content-Length: " + to_string(message_length)).c_str());
 
-    HTTPResponse response;
-    response = makeRequest(url, headers, "", "POST");
-    string session_uri = response.getHeader("Location");
+    string session_uri = makeRequest(url, headers, "", "POST").getHeader("Location");
 
     // uploading
     headers = NULL;
@@ -184,9 +182,7 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     headers = curl_slist_append(headers, "Content-Type: message/rfc822");
     headers = curl_slist_append(headers, ("Content-Length: " + to_string(message_length)).c_str());
 
-    response = makeRequest(session_uri, headers, text_message, "PUT");
-    cout << response.headers << endl;
-    cout << response.body << endl;
+    makeRequest(session_uri, headers, text_message, "PUT");
 }
 
 void GmailAPI::sendMessageWithoutAttachment(const Message& message) {

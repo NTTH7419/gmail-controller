@@ -52,6 +52,20 @@
 		"string_view": "cpp",
 		"iomanip": "cpp",
 		"valarray": "cpp",
-		"thread": "cpp"
+		"thread": "cpp",
+		"*.ipp": "cpp",
+		"bit": "cpp",
+		"charconv": "cpp",
+		"codecvt": "cpp",
+		"compare": "cpp",
+		"concepts": "cpp",
+		"optional": "cpp",
+		"format": "cpp",
+		"numbers": "cpp",
+		"ranges": "cpp",
+		"semaphore": "cpp",
+		"span": "cpp",
+		"stop_token": "cpp",
+		"variant": "cpp"
 	}
 }

@@ -3,7 +3,7 @@ set /p "input=Enter 1: Build client, 2: Build server, 3: Run client, 4: run serv
 
 if %input% == 1 (
     cd .\socket\client
-    g++ -o client.exe *.cpp gmailapi/*.cpp -lpsapi -lws2_32 -lcurl -I./lib/curl_8.10.1/include -I./lib/json/include -L./lib/curl_8.10.1/lib
+    g++ -o client.exe *.cpp gmailapi/*.cpp -lpsapi -lws2_32 -lcurl -I./lib/curl_8.11/include -I./lib/json/include -L./lib/curl_8.11/lib
     echo completed
     pause
 ) else (
