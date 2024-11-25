@@ -23,6 +23,7 @@
 
 #define DEFAULT_BUFLEN 1024
 #define DEFAULT_PORT "55555"
+#define DISCOVERY_PORT 6666
 
 using namespace std;
 
@@ -36,8 +37,8 @@ private:
     struct addrinfo *result = NULL;
     struct addrinfo hints;
 
-    char receive_buffer[DEFAULT_BUFLEN];
-    int receive_buffer_len = DEFAULT_BUFLEN;
+    char buffer[DEFAULT_BUFLEN];
+    int buffer_len = DEFAULT_BUFLEN;
     SOCKET server_socket = INVALID_SOCKET;
     SOCKET client_socket = INVALID_SOCKET;
 
@@ -49,18 +50,21 @@ private:
     int bindSocket();
     int acceptConnection();
     int getIP();
+    
 
 public:
     Server();
     void initialize();
     int listenForConnection();
     void broadcastIP();
+    void broadcastDiscovery();
 
     SOCKET& getClientSocket();
     int process(string);
-    int receive(string&);
+    string receive();
     void echo(const string& message);
     ~Server();
 };
 
-void sendFile(Server& server, const string& filepath);
+
+int sendFile(Server& server, const string& filepath);

@@ -1,5 +1,10 @@
 #include "commands.h"
+#define SUCCESS 0
+#define FAILURE 1
 
+void Command::setIP(string ip){
+    this->ip = ip;
+}
 
 ProcessCommand::ProcessCommand() : message(), response() {
     commands.insert({{"shutdown", new ShutdownCommand},
@@ -40,7 +45,7 @@ string ProcessCommand::getCommand() {
 
 string ProcessCommand::getIP() {
     string body = message.getBody();
-    string ip = body.substr(0, body.find('\n'));
+    string ip = body.substr(0, body.find("\r\n"));
     return ip;
 }
 
@@ -54,13 +59,25 @@ string ProcessCommand::getParameter() {
 void ProcessCommand::executeCommand(Client& client) {
     if (message.isEmpty()) return;
 	string command = getCommand();
+    string ip = getIP();
 	string param = getParameter();
 	string send_string = command + "\n" + param;
-	SOCKET server_socket = client.getServerSocket();
-    
-	send(server_socket, send_string.c_str(), send_string.length(), 0);
-    cout << "command sent: " << send_string << endl;
+	SOCKET server_socket = client.getServerSocket(ip);
 
+    if (server_socket == INVALID_SOCKET) {
+        cerr << "Invalid socket for IP: " << ip << endl;
+        return;
+    }
+    
+    int error_code = 0;
+	if (send(server_socket, send_string.c_str(), send_string.length(), 0) == SOCKET_ERROR){
+        cerr << "Error: " << WSAGetLastError() << endl;
+        return;
+    }
+    else
+        cout << "command sent: " << send_string << endl;
+
+    commands[command]->setIP(ip);
     commands[getCommand()]->execute(client, getParameter());
     
     sendResponse("Command executed");
@@ -93,17 +110,21 @@ void ProcessCommand::process(Client& client){
         int comma = input.find(' ');
         string command = input;
         string param = "";
+        string ip = ";";
         if (comma != string::npos) {
             command = input.substr(0, comma);
             param = input.substr(comma + 1);
         }
 
-        send(client.getServerSocket(), input.c_str(), input.length(), 0);
-        cout << "command sent: " << input << endl;
+        if(send(client.getServerSocket(ip), input.c_str(), input.length(), 0) == 0)
+            cout << "command sent: " << input << endl;
+        else
+            cerr << WSAGetLastError() << endl;
 
         if (command == "end") return;
 
         if (commands.find(command) != commands.end()) {
+
             commands[command]->execute(client, param);
         }
         else cout << "Error: invalid command" << endl;
@@ -117,110 +138,42 @@ void ShutdownCommand::execute(Client& client, const string& param){
 
 //*Get File Command
 void GetFileCommand::execute(Client& client, const string& param){
-    receiveFile(client);
+    receiveFile(client, ip);
+    string response = client.receiveResponse(ip);
+    cout << response << endl;
 }
 
 //*Delete File Command
 void DeleteFileCommand::execute(Client& client, const string& param){
-    char buffer[DEFAULT_BUFLEN] = {'\0'};
-    recv(client.getServerSocket(), buffer, DEFAULT_BUFLEN, 0);
-    cout << buffer;
+    string response = client.receiveResponse(ip);
+    cout << response << endl;
 }
 
 //* List File Command
 void ListFileCommand::execute(Client& client, const string& param){
-    const int buffer_len = DEFAULT_BUFLEN;
-    char buffer[buffer_len];
-    SOCKET& server_socket = client.getServerSocket();
+    receiveFile(client, ip);
+    string response = client.receiveResponse(ip);
 
-    int byte_received = recv(server_socket, buffer, buffer_len, 0);
-    buffer[byte_received] = '\0';
-    cout << buffer << endl;
-
-    if (strcmp(buffer, "listing file") != 0){
-        cout << "Error! Initial response not received!" << endl;
-        return;
-    }
-
-    cout << "current files in the directory " << param << ':' << endl;
-    char* stop;
-    do{
-        byte_received = recv(server_socket, buffer, buffer_len, 0);
-        buffer[byte_received] = '\0';
-        stop = strstr(buffer, "FILE_LISTED");
-        if(stop != NULL){
-            buffer[stop - buffer] = '\0';
-            cout << buffer;
-            break;
-        }
-        cout << buffer;
-    }
-    while(byte_received > 0);
-
-    cout << "file listed successfully !" << endl;
+    cout << response << endl;
 }
 
 void ListAppCommand::execute(Client& client, const string& param){
-    cout << "listing running applications: " << endl;
-    const int buffer_len = DEFAULT_BUFLEN;
-    char buffer[buffer_len];
-    SOCKET& server_socket = client.getServerSocket();
-
-    int byte_received = recv(server_socket, buffer, buffer_len, 0);
-    buffer[byte_received] = '\0';
-
-    if (strcmp(buffer, "listing applications") != 0){
-        cout << "Error! Initial response not received!" << endl;
-        return;
-    }
-
-    cout << "currently running applications: " << endl;
-    char* stop;
-    do{
-        byte_received = recv(server_socket, buffer, buffer_len, 0);
-        buffer[byte_received] = '\0';
-        stop = strstr(buffer, "APP_LISTED");
-        if(stop != NULL){
-            buffer[stop - buffer] = '\0';
-            cout << buffer;
-            break;
-        }
-        cout << buffer;
-    }
-    while(byte_received > 0);
-
-    cout << "applications listed successfully !" << endl;
-
+    receiveFile(client, ip);
+    string response = client.receiveResponse(ip);
+    cout << response << endl;
 }
 
 void StartAppCommand::execute(Client& client, const string& param){
     cout << "Starting application..." << endl;
-    string status = client.receiveResponse();
+    string response = client.receiveResponse(ip);
 
-    if (status == "success"){
-        cout << "Application started successfully" << endl;
-    }
-    else if (status == "failure") {
-        cout << "Failed to start application" << endl;
-    }
-    else{
-        cout << "An error has occured" << endl;
-    }
+    cout << response << endl;
 }
 
 void StopAppCommand::execute(Client& client, const string& param){
     cout << "Stopping applications..." << endl;
-    string status = client.receiveResponse();
-
-    if (status == "success"){
-        cout << "Application stopped successfully" << endl;
-    }
-    else if (status == "failure") {
-        cout << "Failed to stop application" << endl;
-    }
-    else{
-        cout << "An error has occured" << endl;
-    }
+    string response = client.receiveResponse(ip);
+    cout << response << endl;
 }
 
 void RestartCommand::execute(Client& client, const string& param){
@@ -229,6 +182,48 @@ void RestartCommand::execute(Client& client, const string& param){
 
 
 void ScreenshotCommand::execute(Client& client, const string& param){
-    cout << "taking a screenshot" << endl;
-    receiveFile(client);
+    receiveFile(client, ip);
+    string response = client.receiveResponse(ip);
+    cout << response << endl;
+}
+
+int receiveFile(Client& client, string ip){
+    const int buffer_len = DEFAULT_BUFLEN;
+    char buffer[buffer_len];
+    SOCKET server_socket = client.getServerSocket(ip);
+
+    int byte_received = recv(server_socket, buffer, sizeof(buffer), 0);
+    buffer[byte_received] = '\0';
+
+    if (strcmp(buffer, "error") == 0){
+        cout << "Error: File could not be sent" << endl;
+        return 1;
+    }
+
+    char* sep = strchr(buffer, '|');
+    string file_name = string(buffer).substr(0, sep - buffer);
+    int file_size = stoi(string(buffer).substr(sep - buffer + 1));
+    cout << "ready to receive file" << endl;
+    int count = 0;
+
+    ofstream file("temp\\" + file_name, ios::binary);
+    if (!file) {
+        cerr << "Failed to create file: " << file_name << endl;
+        return 1;
+    }
+    
+    do{
+        if (file_size - count > buffer_len)
+            byte_received = recv(server_socket, buffer, buffer_len, 0);
+        else
+            byte_received = recv(server_socket, buffer, file_size - count, 0);
+
+        file.write(buffer, byte_received);
+        count += byte_received;
+    }
+    while(count < file_size);
+
+    file.close();
+    cout << "file received" << endl;
+    return 0;
 }

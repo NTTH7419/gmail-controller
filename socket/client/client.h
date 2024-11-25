@@ -6,6 +6,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
+#include <unordered_map>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -23,6 +24,7 @@
 
 #define DEFAULT_BUFLEN 1024
 #define DEFAULT_PORT "55555"
+#define DISCOVERY_PORT 6666
 
 using namespace std;
 
@@ -31,23 +33,19 @@ class Client;
 class Client{
 private:
     WSADATA wsaData;
-    SOCKET server_socket = INVALID_SOCKET;
+    unordered_map<string, SOCKET> server_sockets;
     struct addrinfo *result = NULL,
                     *ptr = NULL,
                     hints;
-    char *sendbuf;
-    char recvbuf[DEFAULT_BUFLEN];
-    int recvbuflen = DEFAULT_BUFLEN;
+    char buffer[DEFAULT_BUFLEN];
+    int buffer_len = DEFAULT_BUFLEN;
 
 public:
     Client();
     void initialize();
-    void receiveAvailableIP();
-    SOCKET& getServerSocket();
+    void sendDiscovery();
+    SOCKET getServerSocket(string ip);
     void connectToServer(const char* address);
-    string receiveResponse();
+    string receiveResponse(string ip);
     ~Client();
 };
-
-
-void receiveFile(Client& client);

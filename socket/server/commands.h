@@ -1,8 +1,14 @@
 #include "server.h"
 #include <unordered_map>
+typedef SHORT PROPID;
 #include <gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
+
+#define SUCCESS 0
+#define FAILURE 1
+
 using namespace Gdiplus;
+
 
 class Command;
 class ReceiveCommand;
@@ -12,8 +18,13 @@ class GetFileCommand;
 class ListAppCommand;
 class StartAppCommand;
 class Command{
+protected:
+    int status;
+    string file_path;
+    string message;
 public:
     virtual void execute(Server& server, const string& param) = 0;
+    string createResponse();
 };
 
 class ReceiveCommand {
@@ -21,6 +32,7 @@ class ReceiveCommand {
         string command;
         string parameter;
 
+        
         unordered_map<string, Command*> commands;
 
     public:
@@ -38,7 +50,7 @@ public:
 
 class ListFileCommand : public Command{
 private:
-    vector<string> listFile(const string& path);
+    int listFile(const string& path);
 
 public:
     void execute(Server& server, const string& param) override;
@@ -83,3 +95,5 @@ class ScreenshotCommand : public Command{
     public:
         void execute(Server& server, const string& param) override;
 };
+
+

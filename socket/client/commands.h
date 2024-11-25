@@ -13,8 +13,11 @@ class ListAppCommand;
 class StartAppCommand;
 
 class Command{
+protected:
+    string ip;
 public:
     virtual void execute(Client& Client, const string& param) = 0;
+    void setIP(string ip);
 };
 
 class ProcessCommand {
@@ -87,3 +90,7 @@ class ScreenshotCommand : public Command{
 public: 
     void execute(Client& client, const string& param) override;
 };
+
+
+
+int receiveFile(Client& client, string ip);

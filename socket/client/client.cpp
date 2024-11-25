@@ -18,53 +18,55 @@ void Client::initialize(){
     hints.ai_protocol = IPPROTO_TCP;
 }
 
-void Client::receiveAvailableIP(){
-    SOCKET udp_recv = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (udp_recv == INVALID_SOCKET) {
-        cerr << "Socket creation failed!" << endl;
-        return;
-    }
+void Client::sendDiscovery(){
+    SOCKET udp_discovery = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    BOOL opt = TRUE;
+    setsockopt(udp_discovery, SOL_SOCKET, SO_BROADCAST, (char*)&opt, sizeof(opt));
+    sockaddr_in broadcastAddr, serverAddr;
+    int serverAddrLen = sizeof(serverAddr);
 
-    int broadcastEnable = 1;
-    if (setsockopt(udp_recv, SOL_SOCKET, SO_BROADCAST, (char*)&broadcastEnable, sizeof(broadcastEnable)) == SOCKET_ERROR) {
-        std::cerr << "setsockopt failed to enable broadcast!" << std::endl;
-        closesocket(udp_recv);
-        return;
-    }
+    // Setup broadcast address
+    broadcastAddr.sin_family = AF_INET;
+    broadcastAddr.sin_port = DISCOVERY_PORT;
+    broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
 
-    sockaddr_in localAddr;
-    localAddr.sin_family = AF_INET;
-    localAddr.sin_port = 6666;       // Port to listen to
-    localAddr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
+    string message = "DISCOVER_SERVER";
 
-    if (bind(udp_recv, (struct sockaddr*)&localAddr, sizeof(localAddr)) == SOCKET_ERROR) {
-        std::cerr << "Bind failed!" << std::endl;
-        closesocket(udp_recv);
-        WSACleanup();
-        return;
-    }
-
-    sockaddr_in senderAddr;
-    int senderAddrSize = sizeof(senderAddr);
+    // Broadcast the discovery message
+    sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+    int bytes_received;  
     
-    while (true) {
-        int bytes_received = recvfrom(udp_recv, recvbuf, recvbuflen, 0, (struct sockaddr*)&senderAddr, &senderAddrSize);
-        if (bytes_received == SOCKET_ERROR) {
-            cerr << "recvfrom failed!" << endl;
-            break;
-        }
 
-        if (bytes_received > 0){
-            recvbuf[bytes_received] = '\0';
-            string ip(inet_ntoa(senderAddr.sin_addr));
+    timeval timeout;
+    timeout.tv_sec = 10;  // 3 seconds timeout
+    timeout.tv_usec = 0;
+    setsockopt(udp_discovery, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
-            cout << "Computer: " << recvbuf << endl;
-            break;
+
+    do{
+        bytes_received = recvfrom(udp_discovery, buffer, buffer_len, 0, (sockaddr*)&serverAddr, &serverAddrLen);
+        if (bytes_received > 0) {
+            buffer[bytes_received] = '\0';
+            cout << "Computer: " << buffer << endl;
+            string ip = string(buffer);
+            ip = ip.substr(ip.find(": ") + 2);
+            connectToServer(ip.c_str());
+            cout << "connected to computer with ip: " << ip << endl;
+
+        } 
+        else{
+            // Break the loop if no more responses or timeout occurs
+            if (WSAGetLastError() == WSAETIMEDOUT) {
+                cout << "Timeout reached. No more responses." << endl;
+                break;
+            }
         }
     }
+    while(true);
 
+    // Cleanup
+    closesocket(udp_discovery);
 
-    closesocket(udp_recv);
 }
 
 void Client::connectToServer(const char* address){
@@ -74,88 +76,68 @@ void Client::connectToServer(const char* address){
         return;
     }
 
+    server_sockets[string(address)] = INVALID_SOCKET;
     for(ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 
         // Create a SOCKET for connecting to server
-        server_socket = socket(ptr->ai_family, ptr->ai_socktype, 
-            ptr->ai_protocol);
-        if (server_socket == INVALID_SOCKET) {
+        server_sockets[string(address)] = SOCKET(socket(ptr->ai_family, ptr->ai_socktype, 
+            ptr->ai_protocol));
+
+        if (server_sockets[string(address)] == INVALID_SOCKET) {
             cout << "socket failed with error: " << WSAGetLastError();
             return;
         }
-        error = connect( server_socket, ptr->ai_addr, (int)ptr->ai_addrlen);
+        error = connect(server_sockets[string(address)], ptr->ai_addr, (int)ptr->ai_addrlen);
 
         if (error == SOCKET_ERROR) {
-            closesocket(server_socket);
-            server_socket = INVALID_SOCKET;
+            closesocket(server_sockets[string(address)]);
             continue;
         }
 
         break;
     }
 
-    if (server_socket == INVALID_SOCKET) {
+    if (server_sockets[string(address)] == INVALID_SOCKET) {
         cout << "Unable to connect to server!" << endl;
         return;
     }
     cout << "Connected!" << endl;
 
-    freeaddrinfo(result);      
+    cout << address << endl;
+
+    freeaddrinfo(result);
 }
 
-string Client::receiveResponse(){
-    int byte_received = recv(server_socket, recvbuf, recvbuflen, 0);
-    recvbuf[byte_received] = '\0';
+string Client::receiveResponse(string ip){
+    int byte_received = recv(server_sockets[ip], buffer, buffer_len, 0);
+    buffer[byte_received] = '\0';
 
     if (byte_received < 0){
-        return "Error";
+        return "Error: response not received";
     }
 
-    string response(recvbuf);
+    string response(buffer);
 
     return response;
 }
 
-SOCKET& Client::getServerSocket(){
-    return server_socket;
+SOCKET Client::getServerSocket(string ip){
+    for (auto it = server_sockets.begin(); it != server_sockets.end(); it++){
+        if (it->first == ip)
+            return it->second;
+    }
+    return INVALID_SOCKET;
 }
 
 
 Client::~Client(){
+    for (auto it = server_sockets.begin(); it != server_sockets.end(); it++)
+        closesocket(it->second);
+
+    server_sockets.clear();
+
     freeaddrinfo(result);
-    closesocket(server_socket);
     WSACleanup();
 }
 
 //! Remember to delete couts
-void receiveFile(Client& client){
-    const int buffer_len = DEFAULT_BUFLEN;
-    char buffer[buffer_len];
-    SOCKET& server_socket = client.getServerSocket();
-
-    int byte_received = recv(server_socket, buffer, sizeof(buffer), 0);
-    buffer[byte_received] = '\0';
-
-    if (strcmp(buffer, "error") == 0){
-        cout << "Error: File could not be sent" << endl;
-        return;
-    }
-
-    string file_name = string(buffer);
-    cout << file_name << endl;;
-    cout << "ready to receive file" << endl;
-    ofstream file(file_name, ios::binary);
-    if (!file) {
-        cerr << "Failed to create file: " << file_name << endl;
-        return;
-    }
-    
-    do{
-        byte_received = recv(server_socket, buffer, buffer_len, 0);
-        file.write(buffer, byte_received);
-    }
-    while(byte_received == buffer_len);
-
-    file.close();
-    cout << "file received" << endl;
-}

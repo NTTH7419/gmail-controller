@@ -20,7 +20,8 @@ void Server::initialize(){
     freeaddrinfo(result);
     cout << "Initialization completed!" << endl;
     cout << "Server IP address: " << ip << endl;
-    broadcastIP();
+    // broadcastIP();
+    broadcastDiscovery();
 }
 
 void Server::broadcastIP(){
@@ -40,10 +41,10 @@ void Server::broadcastIP(){
 
     sockaddr_in broadcastAddr;
     broadcastAddr.sin_family = AF_INET;
-    broadcastAddr.sin_port = 6666;
+    broadcastAddr.sin_port = DISCOVERY_PORT;
     broadcastAddr.sin_addr.s_addr = inet_addr("255.255.255.255");
 
-    string server_info = string(hostname) + ": " + ip;
+    string server_info = string(hostname) + ", ip: " + ip;
 
     if (sendto(udp_send, server_info.c_str(), server_info.length(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) == SOCKET_ERROR) {
         cerr << "Broadcast failed: " << WSAGetLastError() << endl;
@@ -52,6 +53,33 @@ void Server::broadcastIP(){
     cout << "IP broadcasted successfully" << endl;
     closesocket(udp_send);
 
+}
+
+void Server::broadcastDiscovery(){
+    SOCKET udp_discovery = socket(AF_INET, SOCK_DGRAM, 0);
+    sockaddr_in serverAddr, clientAddr;
+    int clientAddrLen = sizeof(clientAddr);
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = 6666;
+    serverAddr.sin_addr.s_addr = INADDR_ANY; // Bind to all interfaces
+    bind(udp_discovery, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+    std::cout << "UDP Discovery Server is running..." << std::endl;
+
+        // Wait for discovery message
+    int recvLen = recvfrom(udp_discovery, buffer, buffer_len ,0, (sockaddr*)&clientAddr, &clientAddrLen);
+    if (recvLen > 0) {
+        buffer[recvLen] = '\0'; // Null-terminate the message
+        cout << "Received discovery request: " << buffer << endl;
+        
+        cout << "Sending server info" << endl;
+        // Respond with server's IP and TCP port
+        string response = string(hostname) + ", ip: " + ip;
+        sendto(udp_discovery, response.c_str(), response.size(), 0, (sockaddr*)&clientAddr, clientAddrLen);
+    }
+
+    // Cleanup
+    closesocket(udp_discovery);
 }
 
 
@@ -132,20 +160,21 @@ int Server::acceptConnection(){
     return 0;
 }
 
-int Server::receive(string &message){
-    int bytes_received = recv(client_socket, receive_buffer, receive_buffer_len, 0);
+string Server::receive(){
+    int bytes_received = recv(client_socket, buffer, buffer_len, 0);
     if (bytes_received >= 0) {
         char* receive_message = new char[bytes_received + 1] {'\0'};
-        strncpy(receive_message, receive_buffer, bytes_received);
-        message = string(receive_message);
+        strncpy(receive_message, buffer, bytes_received);
+        string message = string(receive_message);
         delete [] receive_message;
         cout << "message received: " << message << endl;
+        return message;
     } 
     else {
         cout << "receive message failed, error: " << WSAGetLastError() << endl;
     }
 
-    return bytes_received;
+    return "error";
 }
 
 SOCKET& Server::getClientSocket(){
@@ -169,34 +198,4 @@ Server::~Server(){
     WSACleanup();
 }
 
-//! Remember to delete couts
-void sendFile(Server& server, const string& filepath) {
-    SOCKET client_socket = server.getClientSocket();
 
-    string file_name;
-    int last_slash = filepath.rfind('\\');
-    if (last_slash != string::npos){
-        file_name = filepath.substr(last_slash + 1);
-    }
-    else file_name = filepath;
-    cout << file_name << endl;
-    ifstream file(filepath.c_str(), ios::binary);
-    if (!file) {
-        cerr << "Failed to open file: " << filepath << endl;
-        server.echo("error");
-        return;
-    }
-
-    server.echo(file_name);
-
-    const int buff_len = DEFAULT_BUFLEN;
-    char send_buffer[buff_len];
-    while (file.read(send_buffer, buff_len).gcount() > 0) {
-        send(client_socket, send_buffer, static_cast<int>(file.gcount()), 0);
-    }
-    file.close();
-
-    send(client_socket, send_buffer, 0, 0);
-    cout << "file sent" << endl;
-    
-}

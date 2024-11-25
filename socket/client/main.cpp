@@ -34,11 +34,12 @@ int __cdecl main() {
 
     Client c;
     c.initialize();
-    cout << "type in the IP of the computer to connect to" << endl;
-    c.receiveAvailableIP();
-    string ip;
-    getline(cin, ip);
-    c.connectToServer(ip.c_str());
+    // cout << "type in the IP of the computer to connect to" << endl;
+    // c.receiveAvailableIP();
+    c.sendDiscovery();
+    // string ip;
+    // getline(cin, ip);
+    // c.connectToServer(ip.c_str());
     
 	ProcessCommand pc;
 
