@@ -198,4 +198,32 @@ Server::~Server(){
     WSACleanup();
 }
 
+int sendFile(Server& server, const string& filepath) {
+    SOCKET client_socket = server.getClientSocket();
 
+    string file_name;
+    int last_slash = filepath.rfind('\\');
+    if (last_slash != string::npos){
+        file_name = filepath.substr(last_slash + 1);
+    }
+    else file_name = filepath;
+    ifstream file(filepath.c_str(), ios::binary);
+    if (!file) {
+        cerr << "Failed to open file: " << filepath << endl;
+        server.echo("error");
+        return 1;
+    }
+
+    file.seekg(0, ios::end);
+    int file_size = file.tellg();
+    file.seekg(0, ios::beg);
+    server.echo(file_name + '|' + to_string(file_size));
+    const int buff_len = DEFAULT_BUFLEN;
+    char send_buffer[buff_len];
+    while (file.read(send_buffer, buff_len).gcount() > 0) {
+        send(client_socket, send_buffer, static_cast<int>(file.gcount()), 0);
+    }
+    file.close();
+    cout << "file sent" << endl;
+    return 0;
+}

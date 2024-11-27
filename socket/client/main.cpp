@@ -43,7 +43,6 @@ int __cdecl main() {
     
 	ProcessCommand pc;
 
-
     while (true) {
         if (!pc.getLatestMessage()) {
     		cout << "No new command, retry after 3 secs" << endl;

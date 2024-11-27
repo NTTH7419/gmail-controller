@@ -1,9 +1,18 @@
 #include "commands.h"
-#define SUCCESS 0
-#define FAILURE 1
 
-void Command::setIP(string ip){
+
+const string Command::directory = "temp\\";
+const string ProcessCommand::directory = "temp\\";
+
+
+void Command::setIP(const string& ip){
     this->ip = ip;
+}
+
+string Command::getResponse() {
+    string temp = response;
+    response = "";
+    return temp;
 }
 
 ProcessCommand::ProcessCommand() : message(), response() {
@@ -19,14 +28,12 @@ ProcessCommand::ProcessCommand() : message(), response() {
                      {"getfile", new GetFileCommand},
                      {"deletefile", new DeleteFileCommand},
                      {"screenshot", new ScreenshotCommand},
-                    //  {"takephoto", new TakePhotoCommand},
+                     //{"takephoto", new TakePhotoCommand},
                      //{"startrecord", new StartRecordCommand},
                      //{"stoprecord", new StopRecordCommand},
-                     //{"record", new RecordCommand},
                      //{"startkeylog", new StartKeylogCommand},
                      //{"stopkeylog", new StopKeylogCommand},
-                     //{"keylog", new KeylogCommand},
-                     //{"error", new HandleErrorCommand}
+                     {"error", new HandleErrorCommand}
                      });
 }
 
@@ -39,19 +46,45 @@ ProcessCommand::~ProcessCommand() {
 
 string ProcessCommand::getCommand() {
     string command = message.getSubject();
-    if (commands.find(command) == commands.end()) return "error";
+    if (commands.find(command) == commands.end()) return "invalid";
     return command;
+}
+
+bool ProcessCommand::isValidIP(const string &ip) {
+    // Define a regular expression for a valid IPv4 address
+    const std::regex pattern("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$");
+    std::smatch match;
+
+    // Check if IP matches the pattern
+    if (regex_match(ip, match, pattern)) {
+        // Validate each octet is within the range 0-255
+        for (int i = 1; i <= 4; ++i) {
+            int octet = std::stoi(match[i].str());
+            if (octet < 0 || octet > 255) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 string ProcessCommand::getIP() {
     string body = message.getBody();
     string ip = body.substr(0, body.find("\r\n"));
-    return ip;
+    if (isValidIP(ip))
+        return ip;
+    else
+        return "invalid";
 }
 
 string ProcessCommand::getParameter() {
     string body = message.getBody();
-    string param = body.substr(body.find('\n') + 1);
+    int idx = body.find("\r\n");
+    if (idx == body.npos) {
+        return "";
+    }
+    string param = body.substr(idx + 2);
     return param;
 }
 
@@ -61,7 +94,17 @@ void ProcessCommand::executeCommand(Client& client) {
 	string command = getCommand();
     string ip = getIP();
 	string param = getParameter();
-	string send_string = command + "\n" + param;
+	string send_string = command + '-' + param;
+
+    if (ip == "invalid" || command == "invalid") {
+        commands["error"]->execute(client, "");
+        response = commands["error"]->getResponse();
+        processResponse();
+        message.clear();
+        return;
+    }
+
+
 	SOCKET server_socket = client.getServerSocket(ip);
 
     if (server_socket == INVALID_SOCKET) {
@@ -77,21 +120,23 @@ void ProcessCommand::executeCommand(Client& client) {
     else
         cout << "command sent: " << send_string << endl;
 
+
     commands[command]->setIP(ip);
-    commands[getCommand()]->execute(client, getParameter());
-    
-    sendResponse("Command executed");
+    commands[command]->execute(client, getParameter());
+    response = commands[command]->getResponse();
+    processResponse();
     message.clear();
 }
 
 bool ProcessCommand::getLatestMessage() {
-	// string query = "from:phungngoctuan5@gmail.com is:unread";
-    string query = "from:quangthangngo181@gmail.com is:unread";
+	string query = "from:phungngoctuan5@gmail.com is:unread";
+    // string query = "from:quangthangngo181@gmail.com is:unread";
     message = gmailapi.getLatestMessage(query);
     if (message.isEmpty()) return false;
     gmailapi.markAsRead(message.getGmailID());
     return true;
 }
+
 
 void ProcessCommand::sendResponse(const string& response_string, const Attachment& attachment) {
     Message response;
@@ -99,6 +144,25 @@ void ProcessCommand::sendResponse(const string& response_string, const Attachmen
     response.setBody(response_string);
 
     gmailapi.replyMessage(message, response, attachment);
+}
+
+void ProcessCommand::processResponse() {
+    json j;
+    try {
+        j = json::parse(response);
+        if (j["status"] == -1) {
+            sendResponse("An error has occur when executing the command");
+            return;
+        }
+        if (j["status"] == SUCCESS && j["file"] != "")
+            sendResponse(j["message"], Attachment(directory + string(j["file"]), j["file"]));
+        else
+            sendResponse(j["message"]);
+
+    }
+    catch (exception& e) {
+        sendResponse("An error has occur when processing server response.");
+    }
 }
 
 //* for testing only
@@ -110,13 +174,13 @@ void ProcessCommand::process(Client& client){
         int comma = input.find(' ');
         string command = input;
         string param = "";
-        string ip = ";";
+        string ip = "";
         if (comma != string::npos) {
             command = input.substr(0, comma);
             param = input.substr(comma + 1);
         }
 
-        if(send(client.getServerSocket(ip), input.c_str(), input.length(), 0) == 0)
+        if(send(client.getServerSocket(ip), input.c_str(), input.length(), 0) > 0)
             cout << "command sent: " << input << endl;
         else
             cerr << WSAGetLastError() << endl;
@@ -124,7 +188,7 @@ void ProcessCommand::process(Client& client){
         if (command == "end") return;
 
         if (commands.find(command) != commands.end()) {
-
+            commands[command]->setIP(ip);
             commands[command]->execute(client, param);
         }
         else cout << "Error: invalid command" << endl;
@@ -134,96 +198,72 @@ void ProcessCommand::process(Client& client){
 //*Shutdown Command
 void ShutdownCommand::execute(Client& client, const string& param){
     cout << "Shutting down server from client" << endl;
+    response = client.receiveResponse(ip);
+    cout << response << endl;
+}
+
+void RestartCommand::execute(Client& client, const string& param){
+    cout << "restarting server..." << endl;
+    response = client.receiveResponse(ip);
+    cout << response << endl;
 }
 
 //*Get File Command
 void GetFileCommand::execute(Client& client, const string& param){
-    receiveFile(client, ip);
-    string response = client.receiveResponse(ip);
+    receiveFile(client, ip, directory);
+    response = client.receiveResponse(ip);
     cout << response << endl;
 }
 
 //*Delete File Command
 void DeleteFileCommand::execute(Client& client, const string& param){
-    string response = client.receiveResponse(ip);
+    response = client.receiveResponse(ip);
     cout << response << endl;
 }
 
 //* List File Command
 void ListFileCommand::execute(Client& client, const string& param){
-    receiveFile(client, ip);
-    string response = client.receiveResponse(ip);
+    receiveFile(client, ip, directory);
+    response = client.receiveResponse(ip);
 
     cout << response << endl;
 }
 
 void ListAppCommand::execute(Client& client, const string& param){
-    receiveFile(client, ip);
-    string response = client.receiveResponse(ip);
+    receiveFile(client, ip, directory);
+    response = client.receiveResponse(ip);
     cout << response << endl;
 }
 
 void StartAppCommand::execute(Client& client, const string& param){
     cout << "Starting application..." << endl;
-    string response = client.receiveResponse(ip);
+    response = client.receiveResponse(ip);
 
     cout << response << endl;
 }
 
 void StopAppCommand::execute(Client& client, const string& param){
     cout << "Stopping applications..." << endl;
-    string response = client.receiveResponse(ip);
+    response = client.receiveResponse(ip);
     cout << response << endl;
-}
-
-void RestartCommand::execute(Client& client, const string& param){
-    cout << "restarting server..." << endl;
 }
 
 
 void ScreenshotCommand::execute(Client& client, const string& param){
-    receiveFile(client, ip);
-    string response = client.receiveResponse(ip);
+    receiveFile(client, ip, directory);
+    response = client.receiveResponse(ip);
     cout << response << endl;
 }
 
-int receiveFile(Client& client, string ip){
-    const int buffer_len = DEFAULT_BUFLEN;
-    char buffer[buffer_len];
-    SOCKET server_socket = client.getServerSocket(ip);
 
-    int byte_received = recv(server_socket, buffer, sizeof(buffer), 0);
-    buffer[byte_received] = '\0';
-
-    if (strcmp(buffer, "error") == 0){
-        cout << "Error: File could not be sent" << endl;
-        return 1;
-    }
-
-    char* sep = strchr(buffer, '|');
-    string file_name = string(buffer).substr(0, sep - buffer);
-    int file_size = stoi(string(buffer).substr(sep - buffer + 1));
-    cout << "ready to receive file" << endl;
-    int count = 0;
-
-    ofstream file("temp\\" + file_name, ios::binary);
-    if (!file) {
-        cerr << "Failed to create file: " << file_name << endl;
-        return 1;
-    }
-    
-    do{
-        if (file_size - count > buffer_len)
-            byte_received = recv(server_socket, buffer, buffer_len, 0);
-        else
-            byte_received = recv(server_socket, buffer, file_size - count, 0);
-
-        file.write(buffer, byte_received);
-        count += byte_received;
-    }
-    while(count < file_size);
-
-    file.close();
-    cout << "file received" << endl;
-    return 0;
+void HandleErrorCommand::execute(Client& client, const string& param) {
+    int status = FAILURE;
+    string message;
+    message = "You have input the wrong command, or an invalid IP address.\n";
+    message += "Please try again, or send command \"help\" for more infomation.";
+    json j;
+    j["status"] = status;
+    j["message"] = message;
+    j["file"] = "";
+    response = j.dump();
 }

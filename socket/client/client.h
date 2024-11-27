@@ -1,6 +1,5 @@
 #undef UNICODE
 #define WIN32_LEAN_AND_MEAN
-#define _WIN32_WINNT 0x501
 
 #include <windows.h>
 #include <winsock2.h>
@@ -49,3 +48,5 @@ public:
     string receiveResponse(string ip);
     ~Client();
 };
+
+int receiveFile(Client& client, const string& ip, const string& directory);

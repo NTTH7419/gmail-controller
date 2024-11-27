@@ -141,3 +141,43 @@ Client::~Client(){
 }
 
 //! Remember to delete couts
+int receiveFile(Client& client, const string& ip, const string& directory){
+    const int buffer_len = DEFAULT_BUFLEN;
+    char buffer[buffer_len];
+    SOCKET server_socket = client.getServerSocket(ip);
+
+    int byte_received = recv(server_socket, buffer, sizeof(buffer), 0);
+    buffer[byte_received] = '\0';
+
+    if (strcmp(buffer, "error") == 0){
+        cout << "Error: File could not be sent" << endl;
+        return 1;
+    }
+
+    char* sep = strchr(buffer, '|');
+    string file_name = string(buffer).substr(0, sep - buffer);
+    int file_size = stoi(string(buffer).substr(sep - buffer + 1));
+    cout << "ready to receive file" << endl;
+    int count = 0;
+
+    ofstream file("temp\\" + file_name, ios::binary);
+    if (!file) {
+        cerr << "Failed to create file: " << file_name << endl;
+        return 1;
+    }
+    
+    do{
+        if (file_size - count > buffer_len)
+            byte_received = recv(server_socket, buffer, buffer_len, 0);
+        else
+            byte_received = recv(server_socket, buffer, file_size - count, 0);
+
+        file.write(buffer, byte_received);
+        count += byte_received;
+    }
+    while(count < file_size);
+
+    file.close();
+    cout << "file received" << endl;
+    return 0;
+}

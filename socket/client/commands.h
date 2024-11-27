@@ -1,7 +1,14 @@
-
 #include "client.h"
 #include "gmailapi/gmail-api.h"
+#include <nlohmann/json.hpp>
+#include <regex>
 #pragma comment(lib, "Psapi.lib")
+
+#define SUCCESS 0
+#define FAILURE 1
+
+using json = nlohmann::json;
+
 
 class Command;
 class ProcessCommand;
@@ -14,29 +21,33 @@ class StartAppCommand;
 
 class Command{
 protected:
+    static const string directory;
+    string response;
     string ip;
 public:
     virtual void execute(Client& Client, const string& param) = 0;
-    void setIP(string ip);
+    void setIP(const string& ip);
+    string getResponse();
 };
 
 class ProcessCommand {
     private:
+        static const string directory;
         GmailAPI gmailapi;
         Message message;
         string response;
         unordered_map<string, Command*> commands;
         string getCommand();
+        bool isValidIP(const string &ip);
         string getIP();
         string getParameter();
-
+        void sendResponse(const string& response_string, const Attachment& attachment = {});
+        void processResponse();
     public:
         ProcessCommand();
         ~ProcessCommand();
         void executeCommand(Client& client);
         bool getLatestMessage();
-        void sendResponse(const string& response_string, const Attachment& attachment = {});
-
 		void process(Client& c); //* for testing only  
 };
 
@@ -91,6 +102,7 @@ public:
     void execute(Client& client, const string& param) override;
 };
 
-
-
-int receiveFile(Client& client, string ip);
+class HandleErrorCommand: public Command {
+    public:
+        void execute(Client& client, const string& param) override;
+};

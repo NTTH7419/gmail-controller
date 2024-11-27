@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/socket/client/lib/curl_8.11/**",
                 "${workspaceFolder}/socket/client/lib/curl_8.11/include/**",
-                "${workspaceFolder}/socket/client/lib/json/include/**"
+                "${workspaceFolder}/socket/client/lib/json/include/**",
+                "C:\\MinGW\\include\\**"
             ],
             "defines": [],
             "compilerPath": "C:\\MinGW\\bin\\g++.exe",
