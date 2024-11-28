@@ -129,7 +129,6 @@ SOCKET Client::getServerSocket(string ip){
     return INVALID_SOCKET;
 }
 
-
 Client::~Client(){
     for (auto it = server_sockets.begin(); it != server_sockets.end(); it++)
         closesocket(it->second);

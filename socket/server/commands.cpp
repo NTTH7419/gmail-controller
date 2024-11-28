@@ -143,7 +143,7 @@ void ListFileCommand::execute(Server& server, const string& param){
             message = "Files at directory \\\"" + toRawString(param) + "\\\" were listed successfully.";
             file_name = output_file;
         }
-        else message = "List file error: Server could not send list file infos.";
+        else message = "List file error: Server could not send files info.";
     }
     else{
         server.echo("error");
@@ -270,10 +270,11 @@ void ListAppCommand::execute(Server& server, const string& param){
     SOCKET client_socket = server.getClientSocket();
 
     status = sendFile(server, directory + '\\' + output_file);
-    file_name = output_file;
     
-    if (status == SUCCESS)
+    if (status == SUCCESS) {
+        file_name = output_file;
         message = "Running Applications listed successfully.";
+    }
     else
         message = "List app error: Could not list running applications.";
 

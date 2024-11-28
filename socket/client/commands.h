@@ -36,7 +36,10 @@ class ProcessCommand {
         GmailAPI gmailapi;
         Message message;
         string response;
+        string sender_query;
         unordered_map<string, Command*> commands;
+
+        void updateSenderQuery();
         string getCommand();
         bool isValidIP(const string &ip);
         string getIP();
@@ -48,7 +51,7 @@ class ProcessCommand {
         ~ProcessCommand();
         void executeCommand(Client& client);
         bool getLatestMessage();
-		void process(Client& c); //* for testing only  
+		void process(Client& c); //* for testing only
 };
 
 class ShutdownCommand : public Command{

@@ -16,6 +16,7 @@ string Command::getResponse() {
 }
 
 ProcessCommand::ProcessCommand() : message(), response() {
+    updateSenderQuery();
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"restart", new RestartCommand},
                      {"listapp", new ListAppCommand},
@@ -42,6 +43,36 @@ ProcessCommand::~ProcessCommand() {
         delete it->second;
     }
     commands.clear();
+}
+
+void ProcessCommand::updateSenderQuery() {
+    ifstream fin("valid_email.txt");
+    if (!fin.good()) {
+        sender_query = "is:unread";
+        return;
+    }
+
+    sender_query.clear();
+    string email;
+    if (!fin.eof()) {
+        fin >> email;
+        if (email.empty()) {
+            sender_query = "is:unread";
+            fin.close();
+            return;
+        }
+        sender_query += "from:" + email + ' ';
+        email.clear();
+    }
+    while (!fin.eof()) {
+        fin >> email;
+        if (email.empty()) break;
+        sender_query += "OR from:" + email + ' ';
+        email.clear();
+    }
+    sender_query += "is:unread";
+    fin.close();
+    cout << sender_query << endl;
 }
 
 string ProcessCommand::getCommand() {
@@ -129,9 +160,7 @@ void ProcessCommand::executeCommand(Client& client) {
 }
 
 bool ProcessCommand::getLatestMessage() {
-	string query = "from:phungngoctuan5@gmail.com is:unread";
-    // string query = "from:quangthangngo181@gmail.com is:unread";
-    message = gmailapi.getLatestMessage(query);
+    message = gmailapi.getLatestMessage(sender_query);
     if (message.isEmpty()) return false;
     gmailapi.markAsRead(message.getGmailID());
     return true;
