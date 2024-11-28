@@ -34,7 +34,7 @@ ProcessCommand::ProcessCommand() : message(), response() {
                      //{"stoprecord", new StopRecordCommand},
                      //{"startkeylog", new StartKeylogCommand},
                      //{"stopkeylog", new StopKeylogCommand},
-                     {"error", new HandleErrorCommand}
+                     {"help", new HelpCommand}
                      });
 }
 
@@ -72,7 +72,6 @@ void ProcessCommand::updateSenderQuery() {
     }
     sender_query += "is:unread";
     fin.close();
-    cout << sender_query << endl;
 }
 
 string ProcessCommand::getCommand() {
@@ -122,28 +121,45 @@ string ProcessCommand::getParameter() {
 //! Remember to delete couts
 void ProcessCommand::executeCommand(Client& client) {
     if (message.isEmpty()) return;
-	string command = getCommand();
-    string ip = getIP();
-	string param = getParameter();
-	string send_string = command + '-' + param;
 
-    if (ip == "invalid" || command == "invalid") {
-        commands["error"]->execute(client, "");
-        response = commands["error"]->getResponse();
-        processResponse();
+	string command = getCommand();
+
+    // check command
+    if (command == "invalid") {
+        string error_response;
+        error_response = "You have entered the wrong command.\n";
+        error_response += "Please try again, or send command \"help\" to get the list of available commands.";
+        sendResponse(error_response);
         message.clear();
+        cerr << "Wrong command" << endl;
         return;
     }
 
+    // commands that does not require connection to server
+    if (command == "help") {
+        commands[command]->execute(client, "");
+        response = commands[command]->getResponse();
+        processResponse();
+        message.clear();
+        cout << "Command \"" << command << "\" has been executed";
+        return;
+    }
 
+    // check ip
+    string ip = getIP();
 	SOCKET server_socket = client.getServerSocket(ip);
-
     if (server_socket == INVALID_SOCKET) {
+        string error_response;
+        error_response = "You have entered an invalid IP address.\n";
+        error_response += "Please try again, or send command \"getip\" to get the list of available computers.";
+        sendResponse(error_response);
+        message.clear();
         cerr << "Invalid socket for IP: " << ip << endl;
         return;
     }
     
-    int error_code = 0;
+    string param = getParameter();
+	string send_string = command + '-' + param;
 	if (send(server_socket, send_string.c_str(), send_string.length(), 0) == SOCKET_ERROR){
         cerr << "Error: " << WSAGetLastError() << endl;
         return;
@@ -151,7 +167,7 @@ void ProcessCommand::executeCommand(Client& client) {
     else
         cout << "command sent: " << send_string << endl;
 
-
+    // execute command
     commands[command]->setIP(ip);
     commands[command]->execute(client, getParameter());
     response = commands[command]->getResponse();
@@ -285,14 +301,22 @@ void ScreenshotCommand::execute(Client& client, const string& param){
 }
 
 
-void HandleErrorCommand::execute(Client& client, const string& param) {
-    int status = FAILURE;
-    string message;
-    message = "You have input the wrong command, or an invalid IP address.\n";
-    message += "Please try again, or send command \"help\" for more infomation.";
+void HelpCommand::execute(Client& client, const string& param) {
+    int status = SUCCESS;
+    stringstream ss;
+    ifstream fin(directory + '\\' + "help.txt");
+    if (fin.good()) {
+        ss << fin.rdbuf();
+        fin.close();
+    }
+    else {
+        status = FAILURE;
+        ss << "Help error: Cannot access the content of the help file.";
+    }
+
     json j;
     j["status"] = status;
-    j["message"] = message;
+    j["message"] = ss.str();
     j["file"] = "";
     response = j.dump();
 }

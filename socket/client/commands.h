@@ -105,7 +105,7 @@ public:
     void execute(Client& client, const string& param) override;
 };
 
-class HandleErrorCommand: public Command {
+class HelpCommand: public Command {
     public:
         void execute(Client& client, const string& param) override;
 };
