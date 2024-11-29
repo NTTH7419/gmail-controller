@@ -1,4 +1,4 @@
-#include "commands.h"
+#include "server_cmd.h"
 
 const std::string Command::directory = "temp\\";
 

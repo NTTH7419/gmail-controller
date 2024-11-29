@@ -1,4 +1,4 @@
-#include "commands.h"
+#include "server_cmd.h"
 
 int __cdecl main(void) {
     Server server;
@@ -10,9 +10,6 @@ int __cdecl main(void) {
 			rc.getLatestCommand(server);
 			rc.executeCommand(server);
 		}
-
-		// rc.process(server);
-
 	}
 	
     return 0;

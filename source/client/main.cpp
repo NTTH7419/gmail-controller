@@ -1,4 +1,4 @@
-#include "commands.h"
+#include "process_cmd.h"
 
 int __cdecl main() {    
     // Validate the parameters
@@ -23,9 +23,6 @@ int __cdecl main() {
     	
     	pc.executeCommand(c);
     }
-	
-
-    // pc.process(c);
 
     return 0;
 }
