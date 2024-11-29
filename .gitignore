@@ -20,6 +20,6 @@
 *.out
 *.app
 
-socket/client/token.txt
+*.txt
 socket/client/temp/**
 socket/server/temp/**
