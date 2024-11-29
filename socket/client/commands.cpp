@@ -151,7 +151,7 @@ void ProcessCommand::executeCommand(Client& client) {
     if (server_socket == INVALID_SOCKET) {
         string error_response;
         error_response = "You have entered an invalid IP address.\n";
-        error_response += "Please try again, or send command \"getip\" to get the list of available computers.";
+        error_response += "Please try again, or send command \"getips\" to get the list of available computers.";
         sendResponse(error_response);
         message.clear();
         cerr << "Invalid socket for IP: " << ip << endl;

