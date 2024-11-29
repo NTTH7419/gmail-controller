@@ -1,11 +1,11 @@
 #include "commands.h"
 
 
-const string Command::directory = "temp\\";
-const string ProcessCommand::directory = "temp\\";
+const std::string Command::directory = "temp\\";
+const std::string ProcessCommand::directory = "temp\\";
 
 
-void Command::setCommandInfo(const string& ip, const string& command, const string& param){
+void Command::setCommandInfo(const std::string& ip, const std::string& command, const std::string& param){
     this->ip = ip;
     this->command = command;
     this->parameter = param;
@@ -13,20 +13,20 @@ void Command::setCommandInfo(const string& ip, const string& command, const stri
 
 bool Command::sendCommand(Client& client){
     SOCKET server_socket = client.getServerSocket(ip);
-    string send_string = command + '-' + parameter;
+    std::string send_string = command + '-' + parameter;
 
     if (send(server_socket, send_string.c_str(), send_string.length(), 0) == SOCKET_ERROR){
-        cerr << "Error: the server on the " << ip << " is no longer available" << endl;
+        std::cerr << "Error: the server on the " << ip << " is no longer available" << std::endl;
         return 0;
     }
     
-    cout << "command sent: " << send_string << endl; 
+    std::cout << "command sent: " << send_string << std::endl; 
     
     return 1;
 }  
 
-string Command::getResponse(){
-    string temp = response;
+std::string Command::getResponse(){
+    std::string temp = response;
     response = "";
     return temp;
 }
@@ -63,14 +63,14 @@ ProcessCommand::~ProcessCommand() {
 }
 
 void ProcessCommand::updateSenderQuery() {
-    ifstream fin("valid_email.txt");
+    std::ifstream fin("valid_email.txt");
     if (!fin.good()) {
         sender_query = "is:unread";
         return;
     }
 
     sender_query.clear();
-    string email;
+    std::string email;
     if (!fin.eof()) {
         fin >> email;
         if (email.empty()) {
@@ -91,13 +91,13 @@ void ProcessCommand::updateSenderQuery() {
     fin.close();
 }
 
-string ProcessCommand::getCommand() const{
-    string command = message.getSubject();
+std::string ProcessCommand::getCommand() const{
+    std::string command = message.getSubject();
     if (commands.find(command) == commands.end()) return "invalid";
     return command;
 }
 
-bool ProcessCommand::isValidIP(const string &ip) const{
+bool ProcessCommand::isValidIP(const std::string &ip) const{
     // Define a regular expression for a valid IPv4 address
     const std::regex pattern("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$");
     std::smatch match;
@@ -116,22 +116,22 @@ bool ProcessCommand::isValidIP(const string &ip) const{
     return false;
 }
 
-string ProcessCommand::getIP() const{
-    string body = message.getBody();
-    string ip = body.substr(0, body.find("\r\n"));
+std::string ProcessCommand::getIP() const{
+    std::string body = message.getBody();
+    std::string ip = body.substr(0, body.find("\r\n"));
     if (isValidIP(ip))
         return ip;
     else
         return "invalid";
 }
 
-string ProcessCommand::getParameter() const{
-    string body = message.getBody();
+std::string ProcessCommand::getParameter() const{
+    std::string body = message.getBody();
     int idx = body.find("\r\n");
     if (idx == body.npos) {
         return "";
     }
-    string param = body.substr(idx + 2);
+    std::string param = body.substr(idx + 2);
     return param;
 }
 
@@ -139,17 +139,17 @@ string ProcessCommand::getParameter() const{
 void ProcessCommand::executeCommand(Client& client) {
     if (message.isEmpty()) return;
 
-	string command = getCommand();
-    string param = getParameter();
+	std::string command = getCommand();
+    std::string param = getParameter();
 
     // check command
     if (command == "invalid") {
-        string error_response;
+        std::string error_response;
         error_response = "You have entered the wrong command.\n";
         error_response += "Please try again, or send command \"help\" to get the list of available commands.";
         sendResponse(error_response);
         message.clear();
-        cerr << "Wrong command" << endl;
+        std::cerr << "Wrong command" << std::endl;
         return;
     }
 
@@ -159,21 +159,21 @@ void ProcessCommand::executeCommand(Client& client) {
         response = commands[command]->getResponse();
         processResponse();
         message.clear();
-        cout << "Command \"" << command << "\" has been executed";
+        std::cout << "Command \"" << command << "\" has been executed";
         return;
     }
 
     // check ip
-    string ip = getIP();
+    std::string ip = getIP();
 	SOCKET server_socket = client.getServerSocket(ip);
     if (server_socket == INVALID_SOCKET) {
-        string error_response;
+        std::string error_response;
         error_response = "You have entered an invalid IP address.\n";
         error_response += "Please try again, or send command \"getips\" to get the list of available computers.";
         sendResponse(error_response);
         message.clear();
-        cerr << "Invalid socket for IP: " << ip << endl;
-        response = R"({"status": )" + to_string(1) + R"(, "file": ")" + "" + R"(", "message": ")" + "Invalid socket for IP: " + ip + R"("})";
+        std::cerr << "Invalid socket for IP: " << ip << std::endl;
+        response = R"({"status": )" + std::to_string(1) + R"(, "file": ")" + "" + R"(", "message": ")" + "Invalid socket for IP: " + ip + R"("})";
     }
     else{
         commands[command]->setCommandInfo(ip, command, param);
@@ -193,7 +193,7 @@ bool ProcessCommand::getLatestMessage() {
 }
 
 
-void ProcessCommand::sendResponse(const string& response_string, const Attachment& attachment) {
+void ProcessCommand::sendResponse(const std::string& response_string, const Attachment& attachment) {
     Message response;
     response.setSubject("Re: " + message.getSubject());
     response.setBody(response_string);
@@ -210,35 +210,35 @@ void ProcessCommand::processResponse() {
             return;
         }
         if (j["status"] == SUCCESS && j["file"] != "")
-            sendResponse(j["message"], Attachment(directory + string(j["file"]), j["file"]));
+            sendResponse(j["message"], Attachment(directory + std::string(j["file"]), j["file"]));
         else
             sendResponse(j["message"]);
 
     }
-    catch (exception& e) {
+    catch (std::exception& e) {
         sendResponse("An error has occur when processing server response.");
     }
 }
 
 //* for testing only
 void ProcessCommand::process(Client& client){
-    string input;
+    std::string input;
     while(true){
-        cout << endl << "Input command (\"end\" to end the program): " << endl;
-        getline(cin, input);
+        std::cout << std::endl << "Input command (\"end\" to end the program): " << std::endl;
+        std::getline(std::cin, input);
         int comma = input.find(' ');
-        string command = input;
-        string param = "";
-        string ip = "";
-        if (comma != string::npos) {
+        std::string command = input;
+        std::string param = "";
+        std::string ip = "";
+        if (comma != std::string::npos) {
             command = input.substr(0, comma);
             param = input.substr(comma + 1);
         }
 
         if(send(client.getServerSocket(ip), input.c_str(), input.length(), 0) > 0)
-            cout << "command sent: " << input << endl;
+            std::cout << "command sent: " << input << std::endl;
         else
-            cerr << WSAGetLastError() << endl;
+            std::cerr << WSAGetLastError() << std::endl;
 
         if (command == "end") return;
 
@@ -246,7 +246,7 @@ void ProcessCommand::process(Client& client){
             // commands[command]->setIP(ip);
             commands[command]->execute(client);
         }
-        else cout << "Error: invalid command" << endl;
+        else std::cout << "Error: invalid command" << std::endl;
     }
 }
 
@@ -256,10 +256,10 @@ void ShutdownCommand::execute(Client& client){
         //* response
     }
     else{
-        cout << "shutting down server from client..." << endl;
+        std::cout << "shutting down server from client..." << std::endl;
         response = client.receiveResponse(ip);
     }
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool ShutdownCommand::validateParameter() const {
@@ -271,10 +271,10 @@ void RestartCommand::execute(Client& client){
         //* response
     }
     else{
-        cout << "restarting server..." << endl;
+        std::cout << "restarting server..." << std::endl;
         response = client.receiveResponse(ip);
     }
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool RestartCommand::validateParameter() const {
@@ -284,7 +284,7 @@ bool RestartCommand::validateParameter() const {
 //*Get File Command
 void GetFileCommand::execute(Client& client){
     if (!validateParameter()){
-        cout << "Invalid parameter" << endl;
+        std::cout << "Invalid parameter" << std::endl;
         //* response
         return;
     }
@@ -297,11 +297,11 @@ void GetFileCommand::execute(Client& client){
         response = client.receiveResponse(ip);
     }
         
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool GetFileCommand::validateParameter() const {
-    if (parameter.find("C:\\") == 0 && parameter.find('/') == string::npos)
+    if (parameter.find("C:\\") == 0 && parameter.find('/') == std::string::npos)
         return true;
     return false;
 }
@@ -309,7 +309,7 @@ bool GetFileCommand::validateParameter() const {
 //*Delete File Command
 void DeleteFileCommand::execute(Client& client){
     if (!validateParameter()){
-        cout << "Invalid parameter" << endl;
+        std::cout << "Invalid parameter" << std::endl;
         //* response
         return;
     }
@@ -321,11 +321,11 @@ void DeleteFileCommand::execute(Client& client){
         response = client.receiveResponse(ip);
     }
         
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool DeleteFileCommand::validateParameter() const {
-    if (parameter.find("C:\\") == 0 && parameter.find('/') == string::npos)
+    if (parameter.find("C:\\") == 0 && parameter.find('/') == std::string::npos)
         return true;
     return false;
 }
@@ -333,7 +333,7 @@ bool DeleteFileCommand::validateParameter() const {
 //* List File Command
 void ListFileCommand::execute(Client& client){
     if (!validateParameter()){
-        cout << "Invalid parameter" << endl;
+        std::cout << "Invalid parameter" << std::endl;
         //* response
         return;
     }
@@ -346,11 +346,11 @@ void ListFileCommand::execute(Client& client){
         response = client.receiveResponse(ip);
     }
 
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool ListFileCommand::validateParameter() const {
-    if (parameter.find("C:\\") == 0 && parameter.find('/') == string::npos)
+    if (parameter.find("C:\\") == 0 && parameter.find('/') == std::string::npos)
         return true;
     return false;
 }
@@ -363,7 +363,7 @@ void ListAppCommand::execute(Client& client){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool ListAppCommand::validateParameter() const {
@@ -372,7 +372,7 @@ bool ListAppCommand::validateParameter() const {
 
 void StartAppCommand::execute(Client& client){
     if (!validateParameter()){
-        cout << "Invalid parameter" << endl;
+        std::cout << "Invalid parameter" << std::endl;
         //* response
         return;
     }
@@ -381,12 +381,12 @@ void StartAppCommand::execute(Client& client){
         //*response
     }
     else{
-        cout << "Starting application..." << endl;
+        std::cout << "Starting application..." << std::endl;
         response = client.receiveResponse(ip);
 
     }
 
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool StartAppCommand::validateParameter() const {
@@ -395,7 +395,7 @@ bool StartAppCommand::validateParameter() const {
 
 void StopAppCommand::execute(Client& client){
     if (!validateParameter()){
-        cout << "Invalid parameter" << endl;
+        std::cout << "Invalid parameter" << std::endl;
         //* response
         return;
     }
@@ -404,11 +404,11 @@ void StopAppCommand::execute(Client& client){
         //* response
     }
     else{
-        cout << "Stopping applications..." << endl;
+        std::cout << "Stopping applications..." << std::endl;
         response = client.receiveResponse(ip);
 
     }
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool StopAppCommand::validateParameter() const {
@@ -418,7 +418,7 @@ bool StopAppCommand::validateParameter() const {
 
 void ScreenshotCommand::execute(Client& client){
     if (!validateParameter()){
-        cout << "Invalid parameter" << endl;
+        std::cout << "Invalid parameter" << std::endl;
         return;
     }
 
@@ -430,7 +430,7 @@ void ScreenshotCommand::execute(Client& client){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
-    cout << response << endl;
+    std::cout << response << std::endl;
 }
 
 bool ScreenshotCommand::validateParameter()  const {
@@ -440,8 +440,8 @@ bool ScreenshotCommand::validateParameter()  const {
 
 void HelpCommand::execute(Client& client) {
     int status = SUCCESS;
-    stringstream ss;
-    ifstream fin(directory + '\\' + "help.txt");
+    std::stringstream ss;
+    std::ifstream fin(directory + '\\' + "help.txt");
     if (fin.good()) {
         ss << fin.rdbuf();
         fin.close();
@@ -468,7 +468,7 @@ bool GetIPsCommand::validateParameter() const{
 
 void GetIPsCommand::execute(Client& client){
     int status = SUCCESS;
-    string message;
+    std::string message;
     message = "List of available IPs: \n";
 
     for (auto ip : client.getIPList()) {

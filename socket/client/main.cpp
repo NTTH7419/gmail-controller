@@ -16,7 +16,7 @@ int __cdecl main() {
 
     while (true) {
         if (!pc.getLatestMessage()) {
-    		cout << "No new command, retry after 3 secs" << endl;
+    		std::cout << "No new command, retry after 3 secs" << std::endl;
     		Sleep(3000);
             continue;	
     	}

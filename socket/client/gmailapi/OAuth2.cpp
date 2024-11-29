@@ -1,18 +1,18 @@
 #include "OAuth2.h"
 
-string OAuth::getAuthCode() {
-	string url;
-	cout << "Input the URL Google redirected you to: ";
-	cin >> url;
+std::string OAuth::getAuthCode() {
+	std::string url;
+	std::cout << "Input the URL Google redirected you to: ";
+	std::cin >> url;
 	
 	int idx = url.find("code=");
-	if (idx == string::npos) {
+	if (idx == std::string::npos) {
         return " ";
     }
 	
-    string auth_code = url.erase(0, idx + 5);
+    std::string auth_code = url.erase(0, idx + 5);
     idx = auth_code.find("&");
-    if (idx != string::npos) {
+    if (idx != std::string::npos) {
         auth_code.erase(idx);
     };
     return auth_code;
@@ -20,13 +20,13 @@ string OAuth::getAuthCode() {
 
 void OAuth::openGoogleLogin() {
     // prepare parameter
-    const string scope = "https://mail.google.com/";
-    const string response_type = "code";
-    const string access_type = "offline";
-    const string prompt = "consent";
+    const std::string scope = "https://mail.google.com/";
+    const std::string response_type = "code";
+    const std::string access_type = "offline";
+    const std::string prompt = "consent";
 
 	// construct url
-    string auth_url = credential.auth_uri.c_str();
+    std::string auth_url = credential.auth_uri.c_str();
     auth_url += "?client_id=" + credential.client_id;
     auth_url += "&redirect_uri=" + credential.redirect_uri;
     auth_url += "&response_type=" + response_type;
@@ -35,18 +35,18 @@ void OAuth::openGoogleLogin() {
     auth_url += "&prompt=" + prompt;
 
 	// open google login
-	string command = "start \"\" \"" + auth_url + '\"';  // start "" "auth_url"
+	std::string command = "start \"\" \"" + auth_url + '\"';  // start "" "auth_url"
 	system(command.c_str());
 }
 
-string OAuth::getTokenResponse(const string& auth_code) {
-    string post_fields = "code=" + auth_code + 
+std::string OAuth::getTokenResponse(const std::string& auth_code) {
+    std::string post_fields = "code=" + auth_code + 
                              "&client_id=" + credential.client_id +
                              "&client_secret=" + credential.client_secret +
                              "&redirect_uri=" + credential.redirect_uri +
                              "&grant_type=authorization_code";
 
-    string token_response = makeRequest(credential.token_uri, NULL, post_fields, "POST").body;
+    std::string token_response = makeRequest(credential.token_uri, NULL, post_fields, "POST").body;
     
     return token_response;
 }
@@ -54,13 +54,13 @@ string OAuth::getTokenResponse(const string& auth_code) {
 void OAuth::login() {
 	openGoogleLogin();
 
-    string auth_code = getAuthCode();
+    std::string auth_code = getAuthCode();
     if (auth_code == "") {
         is_error = true;
         error_message = "Auth code not found.";
     }
 
-	string token_response = getTokenResponse(auth_code);
+	std::string token_response = getTokenResponse(auth_code);
     if (token_response == "") {
         is_error = true;
         error_message = "Token response not found.";
@@ -79,7 +79,7 @@ void OAuth::login() {
     }
 }
 
-string OAuth::getAccessToken() {
+std::string OAuth::getAccessToken() {
     if (time(0) > token.refresh_time) {
         refreshToken();
     }
@@ -90,18 +90,18 @@ bool OAuth::good() {
     return !is_error;
 }
 
-string OAuth::getErrorMessage() {
+std::string OAuth::getErrorMessage() {
     return error_message;
 }
 
 void OAuth::refreshToken() {
-    string url = credential.token_uri;
-    string post_fields = "refresh_token=" + token.refresh_token + 
+    std::string url = credential.token_uri;
+    std::string post_fields = "refresh_token=" + token.refresh_token + 
                          "&client_id=" + credential.client_id +
                          "&client_secret=" + credential.client_secret +
                          "&grant_type=refresh_token";
 
-    string token_response = makeRequest(url, NULL, post_fields, "POST").body;    
+    std::string token_response = makeRequest(url, NULL, post_fields, "POST").body;    
 
     json j = json::parse(token_response);
     if (j.contains("access_token")) {
@@ -116,15 +116,15 @@ void OAuth::refreshToken() {
 }
 
 void OAuth::writeTokenToFile() {
-    ofstream fout (token_file);
-    fout << token.refresh_token << endl << token.access_token << endl << token.refresh_time;
+    std::ofstream fout (token_file);
+    fout << token.refresh_token << std::endl << token.access_token << std::endl << token.refresh_time;
     fout.close();
 }
 
 OAuth::OAuth() : client_secret_file("client_secret.json"), token_file("token.txt") {
 
     json j;
-    ifstream fin(client_secret_file);
+    std::ifstream fin(client_secret_file);
     j = json::parse(fin);
     fin.close();
     credential.client_id = j["installed"]["client_id"];

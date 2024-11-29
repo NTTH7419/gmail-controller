@@ -80,6 +80,9 @@
 		"source_location": "cpp",
 		"mutex": "cpp",
 		"shared_mutex": "cpp",
-		"stdfloat": "cpp"
+		"stdfloat": "cpp",
+		"rope": "cpp",
+		"unordered_set": "cpp",
+		"future": "cpp"
 	}
 }

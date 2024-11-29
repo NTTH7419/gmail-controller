@@ -29,34 +29,34 @@ class GetIPsCommand;
 
 class Command{
 protected:
-    static const string directory;
-    string response;
-    string command;
-    string ip;
-    string parameter;
+    static const std::string directory;
+    std::string response;
+    std::string command;
+    std::string ip;
+    std::string parameter;
 public:
     virtual void execute(Client& Client) = 0;
-    void setCommandInfo(const string& ip, const string& command, const string& parameter);
+    void setCommandInfo(const std::string& ip, const std::string& command, const std::string& parameter);
     virtual bool validateParameter() const = 0;
     bool sendCommand(Client& Client);
-    string getResponse();
+    std::string getResponse();
 };
 
 class ProcessCommand {
     private:
-        static const string directory;
+        static const std::string directory;
         GmailAPI gmailapi;
         Message message;
-        string response;
-        string sender_query;
-        unordered_map<string, Command*> commands;
+        std::string response;
+        std::string sender_query;
+        std::unordered_map<std::string, Command*> commands;
 
         void updateSenderQuery();
-        string getCommand() const;
-        bool isValidIP(const string &ip) const;
-        string getIP() const;
-        string getParameter() const;
-        void sendResponse(const string& response_string, const Attachment& attachment = {});
+        std::string getCommand() const;
+        bool isValidIP(const std::string &ip) const;
+        std::string getIP() const;
+        std::string getParameter() const;
+        void sendResponse(const std::string& response_string, const Attachment& attachment = {});
         void processResponse();
     public:
         ProcessCommand();
@@ -75,7 +75,7 @@ public:
 
 class ListFileCommand : public Command{
 private:
-    vector<string> listFile(const string& path);
+    std::vector<std::string> listFile(const std::string& path);
     
 
 public:

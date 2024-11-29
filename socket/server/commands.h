@@ -42,10 +42,10 @@ public:
 
 class ReceiveCommand {
     private:
-        string command;
-        string parameter;
+        std::string command;
+        std::string parameter;
 
-        unordered_map<string, Command*> commands;
+        std::unordered_map<std::string, Command*> commands;
 
     public:
         ReceiveCommand();
@@ -57,68 +57,68 @@ class ReceiveCommand {
 
 class ShutdownCommand : public Command{
 public:
-    void execute(Server& server, const string& param) override;
+    void execute(Server& server, const std::string& param) override;
 };
 
 class ListFileCommand : public Command{
 private:
-    string output_file;
-    int listFile(const string& path);
+    std::string output_file;
+    int listFile(const std::string& path);
 public:
-    void execute(Server& server, const string& param) override;
+    void execute(Server& server, const std::string& param) override;
 };
 
 class GetFileCommand : public Command{
 public:
-    void execute(Server& server, const string& param) override;
+    void execute(Server& server, const std::string& param) override;
 };
 
 
 class DeleteFileCommand : public Command{
 private:
-    void deleteFile(Server& server, const string& filename);
+    void deleteFile(Server& server, const std::string& filename);
 public:
-    void execute(Server& server, const string& param) override;
+    void execute(Server& server, const std::string& param) override;
 };
 
 class ListAppCommand : public Command{
     public:
-        void execute(Server& server, const string& param) override;
+        void execute(Server& server, const std::string& param) override;
 };
 
 
 class StartAppCommand : public Command{
     public:
-        void execute(Server& server, const string& param) override;
+        void execute(Server& server, const std::string& param) override;
 };
 
 
 class StopAppCommand : public Command{
     public:
-        void execute(Server& server, const string& param) override;
+        void execute(Server& server, const std::string& param) override;
 };
 
 class RestartCommand : public Command{
     public:
-        void execute(Server& server, const string& param) override;
+        void execute(Server& server, const std::string& param) override;
 };
 
 class ScreenshotCommand : public Command{
     public:
-        void execute(Server& server, const string& param) override;
+        void execute(Server& server, const std::string& param) override;
 };
 
 class ListSerCommand : public Command{
 private:
     void listRunningServices();
 public:
-    void execute(Server& server, const string& param) override;
+    void execute(Server& server, const std::string& param) override;
 };
 
 class TakePhotoCommand : public Command{
 private:
-    string detectWebcam();
+    std::string detectWebcam();
     int takePhoto();
 public:
-    void execute(Server& server, const string& param) override;
+    void execute(Server& server, const std::string& param) override;
 };

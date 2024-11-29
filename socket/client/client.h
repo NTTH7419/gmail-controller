@@ -25,15 +25,13 @@
 #define DEFAULT_PORT "55555"
 #define DISCOVERY_PORT 6666
 
-using namespace std;
-
 class Client;
 
 class Client{
 private:
     WSADATA wsaData;
-    unordered_map<string, SOCKET> server_sockets;
-    vector<string> ips;
+    std::unordered_map<std::string, SOCKET> server_sockets;
+    std::vector<std::string> ips;
     struct addrinfo *result = NULL,
                     *ptr = NULL,
                     hints;
@@ -44,11 +42,11 @@ public:
     Client();
     void initialize();
     void sendDiscovery();
-    SOCKET getServerSocket(string ip);
+    SOCKET getServerSocket(std::string ip);
     bool connectToServer(const char* address);
-    string receiveResponse(string ip);
-    vector<string> getIPList() const;
+    std::string receiveResponse(std::string ip);
+    std::vector<std::string> getIPList() const;
     ~Client();
 };
 
-int receiveFile(Client& client, const string& ip, const string& directory);
+int receiveFile(Client& client, const std::string& ip, const std::string& directory);

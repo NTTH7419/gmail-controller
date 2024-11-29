@@ -9,7 +9,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <string>
 #include <fstream>
 #include <vector>
@@ -28,10 +28,6 @@
 #define DEFAULT_PORT "55555"
 #define DISCOVERY_PORT 6666
 
-typedef SHORT PROPID;
-using namespace std;
-
-
 
 class Server;
 
@@ -47,7 +43,7 @@ private:
     SOCKET server_socket = INVALID_SOCKET;
     SOCKET client_socket = INVALID_SOCKET;
 
-    string ip;
+    std::string ip;
     char hostname[256];
     
     int createAddressInfo();
@@ -65,11 +61,11 @@ public:
     void broadcastDiscovery();
 
     SOCKET& getClientSocket();
-    int process(string);
-    string receive();
-    void echo(const string& message);
+    int process(std::string);
+    std::string receive();
+    void echo(const std::string& message);
     ~Server();
 };
 
 
-int sendFile(Server& server, const string& filepath);
+int sendFile(Server& server, const std::string& filepath);

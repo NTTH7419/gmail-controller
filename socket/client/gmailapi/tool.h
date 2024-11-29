@@ -7,17 +7,16 @@
 #include <iomanip>
 #include <sstream>
 
-using namespace std;
 using json = nlohmann::json;
 
 struct HTTPResponse {
-	string headers;
-	string body;
+	std::string headers;
+	std::string body;
 	
-	string getHeader(const string& name);
+	std::string getHeader(const std::string& name);
 };
 
-HTTPResponse makeRequest(const string& request_url, curl_slist *headers, const string& postFields, const string& type);
-string getStringBetween(const string& str, const string& begin, const string& end);
-string trim(string s);
-string urlEncode(const string& value);
+HTTPResponse makeRequest(const std::string& request_url, curl_slist *headers, const std::string& postFields, const std::string& type);
+std::string getStringBetween(const std::string& str, const std::string& begin, const std::string& end);
+std::string trim(std::string s);
+std::string urlEncode(const std::string& value);

@@ -8,36 +8,34 @@
 #include <cstdlib>
 #include "tool.h"
 
-using namespace std;
-
 struct Credential {
-	string client_id;
-	string auth_uri;
-	string token_uri;
-	string client_secret;
-	string redirect_uri;
+	std::string client_id;
+	std::string auth_uri;
+	std::string token_uri;
+	std::string client_secret;
+	std::string redirect_uri;
 };
 
 struct Token {
-	string access_token;
-	string refresh_token;
+	std::string access_token;
+	std::string refresh_token;
 	long refresh_time;
 };
 
 class OAuth {
 	private:
 		Credential credential;
-		string client_secret_file;
+		std::string client_secret_file;
 
 		Token token;
-		string token_file;
+		std::string token_file;
 
 		bool is_error = false;
-		string error_message;
+		std::string error_message;
 
 		void openGoogleLogin();
-		string getAuthCode();
-		string getTokenResponse(const string& auth_code);
+		std::string getAuthCode();
+		std::string getTokenResponse(const std::string& auth_code);
 		void writeTokenToFile();
 		void refreshToken();
 	
@@ -45,7 +43,7 @@ class OAuth {
 		OAuth();
 		~OAuth();
 		void login();
-		string getAccessToken();
+		std::string getAccessToken();
 		bool good();
-		string getErrorMessage();
+		std::string getErrorMessage();
 };

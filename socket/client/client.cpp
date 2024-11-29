@@ -7,10 +7,10 @@ Client::Client(){
 void Client::initialize(){
     int error = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (error != 0) {
-        cout << "WSAStartup failed with error: " << error << endl;
+        std::cout << "WSAStartup failed with error: " << error << std::endl;
         return;
     }
-    cout << "WSAStartup succeeded" << endl;
+    std::cout << "WSAStartup succeeded" << std::endl;
 
     ZeroMemory( &hints, sizeof(hints) );
     hints.ai_family = AF_INET;
@@ -30,11 +30,11 @@ void Client::sendDiscovery(){
     broadcastAddr.sin_port = DISCOVERY_PORT;
     broadcastAddr.sin_addr.s_addr = INADDR_BROADCAST;
 
-    string message = "DISCOVER_SERVER";
+    std::string message = "DISCOVER_SERVER";
 
     // bind(udp_discovery, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     // Broadcast the discovery message
-    cout << "mogga: " << sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) << endl;
+    std::cout << "mogga: " << sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) << std::endl;
     int bytes_received;  
     
     timeval timeout;
@@ -47,19 +47,19 @@ void Client::sendDiscovery(){
         bytes_received = recvfrom(udp_discovery, buffer, buffer_len, 0, (sockaddr*)&serverAddr, &serverAddrLen);
         if (bytes_received > 0) {
             buffer[bytes_received] = '\0';
-            cout << "Computer: " << buffer << endl;
-            string ip = string(buffer);
+            std::cout << "Computer: " << buffer << std::endl;
+            std::string ip = std::string(buffer);
             ip = ip.substr(ip.find("|") + 1);
-            cout << ip << endl; 
+            std::cout << ip << std::endl; 
             if (connectToServer(ip.c_str()) == true){
-                ips.push_back(string(buffer));
+                ips.push_back(std::string(buffer));
             }
             
 
         } 
         else{
             if (WSAGetLastError() == WSAETIMEDOUT) {
-                cout << "Timeout reached. No more responses." << endl;
+                std::cout << "Timeout reached. No more responses." << std::endl;
                 break;
             }
         }
@@ -71,49 +71,49 @@ void Client::sendDiscovery(){
     closesocket(udp_discovery);
 }
 
-vector<string> Client::getIPList() const{ 
+std::vector<std::string> Client::getIPList() const{ 
     return ips;
 }
 
 bool Client::connectToServer(const char* address){
     int error = getaddrinfo(address, DEFAULT_PORT, &hints, &result);
     if (error != 0 ) {
-        cout << "getaddrinfo failed with error: " << error;
+        std::cout << "getaddrinfo failed with error: " << error;
         return false;
     }
 
-    server_sockets[string(address)] = INVALID_SOCKET;
+    server_sockets[std::string(address)] = INVALID_SOCKET;
     for(ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 
         // Create a SOCKET for connecting to server
-        server_sockets[string(address)] = SOCKET(socket(ptr->ai_family, ptr->ai_socktype, 
+        server_sockets[std::string(address)] = SOCKET(socket(ptr->ai_family, ptr->ai_socktype, 
             ptr->ai_protocol));
 
-        if (server_sockets[string(address)] == INVALID_SOCKET) {
-            cout << "socket failed with error: " << WSAGetLastError();
+        if (server_sockets[std::string(address)] == INVALID_SOCKET) {
+            std::cout << "socket failed with error: " << WSAGetLastError();
             return false;
         }
-        error = connect(server_sockets[string(address)], ptr->ai_addr, (int)ptr->ai_addrlen);
+        error = connect(server_sockets[std::string(address)], ptr->ai_addr, (int)ptr->ai_addrlen);
 
         if (error == SOCKET_ERROR) {
-            closesocket(server_sockets[string(address)]);
+            closesocket(server_sockets[std::string(address)]);
             continue;
         }
 
         break;
     }
 
-    if (server_sockets[string(address)] == INVALID_SOCKET) {
-        cout << "Unable to connect to server!" << endl;
+    if (server_sockets[std::string(address)] == INVALID_SOCKET) {
+        std::cout << "Unable to connect to server!" << std::endl;
         return false;
     }
-    cout << "Connected to " << address << endl;
+    std::cout << "Connected to " << address << std::endl;
 
     freeaddrinfo(result);
     return true;
 }
 
-string Client::receiveResponse(string ip){
+std::string Client::receiveResponse(std::string ip){
     int byte_received = recv(server_sockets[ip], buffer, buffer_len, 0);
     buffer[byte_received] = '\0';
 
@@ -121,13 +121,13 @@ string Client::receiveResponse(string ip){
         return "Error: response not received";
     }
 
-    string response(buffer);
-    cout << "message: " << response << " received" << endl;
+    std::string response(buffer);
+    std::cout << "message: " << response << " received" << std::endl;
 
     return response;
 }
 
-SOCKET Client::getServerSocket(string ip){
+SOCKET Client::getServerSocket(std::string ip){
     for (auto it = server_sockets.begin(); it != server_sockets.end(); it++){
         if (it->first == ip)
             return it->second;
@@ -146,7 +146,7 @@ Client::~Client(){
 }
 
 //! Remember to delete couts
-int receiveFile(Client& client, const string& ip, const string& directory){
+int receiveFile(Client& client, const std::string& ip, const std::string& directory){
     const int buffer_len = DEFAULT_BUFLEN;
     char buffer[buffer_len];
     SOCKET server_socket = client.getServerSocket(ip);
@@ -155,19 +155,19 @@ int receiveFile(Client& client, const string& ip, const string& directory){
     buffer[byte_received] = '\0';
 
     if (strcmp(buffer, "error") == 0){
-        cout << "Error: File could not be sent" << endl;
+        std::cout << "Error: File could not be sent" << std::endl;
         return 1;
     }
 
     char* sep = strchr(buffer, '|');
-    string file_name = string(buffer).substr(0, sep - buffer);
-    int file_size = stoi(string(buffer).substr(sep - buffer + 1));
-    cout << "ready to receive file" << endl;
+    std::string file_name = std::string(buffer).substr(0, sep - buffer);
+    int file_size = stoi(std::string(buffer).substr(sep - buffer + 1));
+    std::cout << "ready to receive file" << std::endl;
     int count = 0;
 
-    ofstream file("temp\\" + file_name, ios::binary);
+    std::ofstream file("temp\\" + file_name, std::ios::binary);
     if (!file) {
-        cerr << "Failed to create file: " << file_name << endl;
+        std::cerr << "Failed to create file: " << file_name << std::endl;
         return 1;
     }
     
@@ -183,6 +183,6 @@ int receiveFile(Client& client, const string& ip, const string& directory){
     while(count < file_size);
 
     file.close();
-    cout << "file received" << endl;
+    std::cout << "file received" << std::endl;
     return 0;
 }
