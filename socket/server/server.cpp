@@ -44,7 +44,7 @@ void Server::broadcastIP(){
     broadcastAddr.sin_port = DISCOVERY_PORT;
     broadcastAddr.sin_addr.s_addr = inet_addr("255.255.255.255");
 
-    string server_info = string(hostname) + ", ip: " + ip;
+    string server_info = string(hostname) + "|" + ip;
 
     if (sendto(udp_send, server_info.c_str(), server_info.length(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) == SOCKET_ERROR) {
         cerr << "Broadcast failed: " << WSAGetLastError() << endl;
@@ -60,21 +60,20 @@ void Server::broadcastDiscovery(){
     sockaddr_in serverAddr, clientAddr;
     int clientAddrLen = sizeof(clientAddr);
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = 6666;
+    serverAddr.sin_port = DISCOVERY_PORT;
     serverAddr.sin_addr.s_addr = INADDR_ANY; // Bind to all interfaces
     bind(udp_discovery, (sockaddr*)&serverAddr, sizeof(serverAddr));
 
-    std::cout << "UDP Discovery Server is running..." << std::endl;
+    cout << "UDP Discovery Server is running..." << endl;
 
-        // Wait for discovery message
     int recvLen = recvfrom(udp_discovery, buffer, buffer_len ,0, (sockaddr*)&clientAddr, &clientAddrLen);
     if (recvLen > 0) {
-        buffer[recvLen] = '\0'; // Null-terminate the message
+        buffer[recvLen] = '\0';
         cout << "Received discovery request: " << buffer << endl;
         
         cout << "Sending server info" << endl;
-        // Respond with server's IP and TCP port
-        string response = string(hostname) + ", ip: " + ip;
+
+        string response = string(hostname) + "|" + ip;
         sendto(udp_discovery, response.c_str(), response.size(), 0, (sockaddr*)&clientAddr, clientAddrLen);
     }
 

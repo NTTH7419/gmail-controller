@@ -1,23 +1,32 @@
 #include "server.h"
 #include <unordered_map>
-#include <gdiplus.h>
 #include <thread>
+#include <gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
 
 #define SUCCESS 0
 #define FAILURE 1
 
+
 using namespace Gdiplus;
 
-typedef SHORT PROPID;
 
 class Command;
 class ReceiveCommand;
 class ShutdownCommand;
 class ListFileCommand;
 class GetFileCommand;
+class DeleteFileCommand;
 class ListAppCommand;
 class StartAppCommand;
+class StopAppCommand;
+class ListSerCommand;
+class StartSerCommand;
+class StopSerCommand;
+class TakePhotoCommand;
+class StartRecordCommand;
+class StopRecordCommand;
+
 class Command{
 protected:
     static const string directory;
@@ -97,4 +106,10 @@ class ScreenshotCommand : public Command{
         void execute(Server& server, const string& param) override;
 };
 
+class ListSerCommand : public Command{
+private:
+    void listRunningServices();
+public:
+    void execute(Server& server, const string& param) override;
+};
 

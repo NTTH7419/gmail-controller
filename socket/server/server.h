@@ -17,8 +17,7 @@
 #include <tchar.h>
 #include <psapi.h>
 #include <shellapi.h>
-#include <unordered_map>
-#include <gdiplus.h>
+
 
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -28,8 +27,9 @@
 #define DEFAULT_PORT "55555"
 #define DISCOVERY_PORT 6666
 
+typedef SHORT PROPID;
 using namespace std;
-using namespace Gdiplus;
+
 
 
 class Server;

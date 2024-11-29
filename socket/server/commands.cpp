@@ -31,7 +31,7 @@ ReceiveCommand::ReceiveCommand() : command(), parameter() {
                      {"listapp", new ListAppCommand},
                      {"startapp", new StartAppCommand},
                      {"stopapp", new StopAppCommand},
-                     //{"listser", new ListSerCommand},
+                     {"listser", new ListSerCommand},
                      //{"startser", new StartSerCommand},
                      //{"stopser", new StopSerCommand},
                      {"listfile", new ListFileCommand},
@@ -69,35 +69,19 @@ void ReceiveCommand::getLatestCommand(Server& server) {
 void ReceiveCommand::executeCommand(Server& server) {
 	if (command.empty()) return;
 	if (commands.find(command) != commands.end()) {
-			commands[command]->execute(server, parameter);
-		}
+        commands[command]->execute(server, parameter);
+    }
+    else{
+        cout << "THUA" << endl;
+    }
 
 	command = "";
 	parameter = "";
 }
 
-void ReceiveCommand::process(Server& server) {
-    while(true){
-        string message = server.receive();
-        if (message == "end") return;
-
-        int comma = message.find(' ');
-        string cmd = message;
-        string param = "";
-        if (comma != string::npos){
-            cmd = message.substr(0, comma);
-            param = message.substr(comma + 1);
-        }
-
-        if (commands.find(cmd) != commands.end()) {
-			commands[cmd]->execute(server, param);
-		}
-        else cout << "Error: invalid command" << endl;
-    }
-}
-
 //* Shutdown
 void ShutdownCommand::execute(Server& server, const string& param){
+    cout << "con ga" << endl;
     status = SUCCESS;
     message = "Shutdown command has been received.";
     server.echo(createResponse());
@@ -291,7 +275,6 @@ void StartAppCommand::execute(Server& server, const string& param){
         message = "Application \\\"" + toRawString(app_name) + "\\\" started successfully.";
     } else {
         cerr << "Failed to start application: " << app_name << " (Error: " << GetLastError() << ")\n";
-        server.echo("failure");
         status = 1;
         message = "Start app error: Failed to start application \\\"" + toRawString(app_name) + "\\\".";
     }
@@ -463,3 +446,84 @@ void ScreenshotCommand::execute(Server& server, const string& param){
     // Shutdown GDI+
     GdiplusShutdown(gdiplusToken);
 }
+
+void ListSerCommand::listRunningServices() {
+    SC_HANDLE hSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE);
+    if (!hSCManager) {
+        cerr << "Failed to open Service Control Manager. Error: " << GetLastError() << endl;
+        return;
+    }
+
+    DWORD bytesNeeded = 0, servicesReturned = 0, resumeHandle = 0;
+    DWORD bufferSize = 0;
+
+    // First call to get the required buffer size
+    EnumServicesStatusEx(
+        hSCManager,
+        SC_ENUM_PROCESS_INFO,
+        SERVICE_WIN32,
+        SERVICE_ACTIVE, // Only active (running) services
+        nullptr,
+        0,
+        &bytesNeeded,
+        &servicesReturned,
+        &resumeHandle,
+        nullptr);
+
+    if (GetLastError() != ERROR_MORE_DATA) {
+        cerr << "Failed to enumerate services. Error: " << GetLastError() << endl;
+        CloseServiceHandle(hSCManager);
+        return;
+    }
+
+    bufferSize = bytesNeeded;
+    auto buffer = new BYTE[bufferSize];
+    ofstream fout(directory + "runningServiceList.txt");
+
+    if (EnumServicesStatusEx(
+            hSCManager,
+            SC_ENUM_PROCESS_INFO,
+            SERVICE_WIN32,
+            SERVICE_ACTIVE, // Only active (running) services
+            buffer,
+            bufferSize,
+            &bytesNeeded,
+            &servicesReturned,
+            &resumeHandle,
+            nullptr)) {
+        LPENUM_SERVICE_STATUS_PROCESS services = reinterpret_cast<LPENUM_SERVICE_STATUS_PROCESS>(buffer);
+        for (DWORD i = 0; i < servicesReturned; ++i) {
+            fout << "Service Name: " << services[i].lpServiceName << endl;
+            fout << "Display Name: " << services[i].lpDisplayName << endl;
+            fout << "Status: Running" << endl;
+            fout << "--------------------------------" << endl;
+        }
+    } else {
+        cerr << "Failed to enumerate services. Error: " << GetLastError() << endl;
+    }
+
+    fout.close();
+    delete[] buffer;
+    CloseServiceHandle(hSCManager);
+}
+
+void ListSerCommand::execute(Server& server, const string& param) {
+    listRunningServices();
+    string output_file = "runningServiceList.txt";
+    status = sendFile(server, directory + '\\' + output_file);
+    
+    file_name = "";
+    if (status == SUCCESS) {
+        file_name = output_file;
+        message = "Running Services listed successfully.";
+    }
+    else
+        message = "List service error: Could not list running services.";
+
+
+    server.echo(createResponse());
+}
+
+
+
+

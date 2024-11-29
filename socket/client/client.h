@@ -33,6 +33,7 @@ class Client{
 private:
     WSADATA wsaData;
     unordered_map<string, SOCKET> server_sockets;
+    vector<string> ips;
     struct addrinfo *result = NULL,
                     *ptr = NULL,
                     hints;
@@ -44,8 +45,9 @@ public:
     void initialize();
     void sendDiscovery();
     SOCKET getServerSocket(string ip);
-    void connectToServer(const char* address);
+    bool connectToServer(const char* address);
     string receiveResponse(string ip);
+    vector<string> getIPList() const;
     ~Client();
 };
 
