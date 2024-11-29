@@ -32,13 +32,13 @@ void Client::sendDiscovery(){
 
     string message = "DISCOVER_SERVER";
 
+    // bind(udp_discovery, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     // Broadcast the discovery message
-    sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+    cout << "mogga: " << sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) << endl;
     int bytes_received;  
     
-
     timeval timeout;
-    timeout.tv_sec = 10;  // 3 seconds timeout
+    timeout.tv_sec = 5000; 
     timeout.tv_usec = 0;
     setsockopt(udp_discovery, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
@@ -49,13 +49,15 @@ void Client::sendDiscovery(){
             buffer[bytes_received] = '\0';
             cout << "Computer: " << buffer << endl;
             string ip = string(buffer);
-            ip = ip.substr(ip.find(": ") + 2);
-            connectToServer(ip.c_str());
-            cout << "connected to computer with ip: " << ip << endl;
+            ip = ip.substr(ip.find("|") + 1);
+            cout << ip << endl; 
+            if (connectToServer(ip.c_str()) == true){
+                ips.push_back(string(buffer));
+            }
+            
 
         } 
         else{
-            // Break the loop if no more responses or timeout occurs
             if (WSAGetLastError() == WSAETIMEDOUT) {
                 cout << "Timeout reached. No more responses." << endl;
                 break;
@@ -64,16 +66,20 @@ void Client::sendDiscovery(){
     }
     while(true);
 
+
     // Cleanup
     closesocket(udp_discovery);
-
 }
 
-void Client::connectToServer(const char* address){
+vector<string> Client::getIPList() const{ 
+    return ips;
+}
+
+bool Client::connectToServer(const char* address){
     int error = getaddrinfo(address, DEFAULT_PORT, &hints, &result);
     if (error != 0 ) {
         cout << "getaddrinfo failed with error: " << error;
-        return;
+        return false;
     }
 
     server_sockets[string(address)] = INVALID_SOCKET;
@@ -85,7 +91,7 @@ void Client::connectToServer(const char* address){
 
         if (server_sockets[string(address)] == INVALID_SOCKET) {
             cout << "socket failed with error: " << WSAGetLastError();
-            return;
+            return false;
         }
         error = connect(server_sockets[string(address)], ptr->ai_addr, (int)ptr->ai_addrlen);
 
@@ -99,13 +105,12 @@ void Client::connectToServer(const char* address){
 
     if (server_sockets[string(address)] == INVALID_SOCKET) {
         cout << "Unable to connect to server!" << endl;
-        return;
+        return false;
     }
-    cout << "Connected!" << endl;
-
-    cout << address << endl;
+    cout << "Connected to " << address << endl;
 
     freeaddrinfo(result);
+    return true;
 }
 
 string Client::receiveResponse(string ip){
@@ -117,6 +122,7 @@ string Client::receiveResponse(string ip){
     }
 
     string response(buffer);
+    cout << "message: " << response << " received" << endl;
 
     return response;
 }

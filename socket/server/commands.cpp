@@ -31,7 +31,7 @@ ReceiveCommand::ReceiveCommand() : command(), parameter() {
                      {"listapp", new ListAppCommand},
                      {"startapp", new StartAppCommand},
                      {"stopapp", new StopAppCommand},
-                     //{"listser", new ListSerCommand},
+                     {"listser", new ListSerCommand},
                      //{"startser", new StartSerCommand},
                      //{"stopser", new StopSerCommand},
                      {"listfile", new ListFileCommand},
@@ -69,35 +69,19 @@ void ReceiveCommand::getLatestCommand(Server& server) {
 void ReceiveCommand::executeCommand(Server& server) {
 	if (command.empty()) return;
 	if (commands.find(command) != commands.end()) {
-			commands[command]->execute(server, parameter);
-		}
+        commands[command]->execute(server, parameter);
+    }
+    else{
+        cout << "THUA" << endl;
+    }
 
 	command = "";
 	parameter = "";
 }
 
-void ReceiveCommand::process(Server& server) {
-    while(true){
-        string message = server.receive();
-        if (message == "end") return;
-
-        int comma = message.find(' ');
-        string cmd = message;
-        string param = "";
-        if (comma != string::npos){
-            cmd = message.substr(0, comma);
-            param = message.substr(comma + 1);
-        }
-
-        if (commands.find(cmd) != commands.end()) {
-			commands[cmd]->execute(server, param);
-		}
-        else cout << "Error: invalid command" << endl;
-    }
-}
-
 //* Shutdown
 void ShutdownCommand::execute(Server& server, const string& param){
+    cout << "con ga" << endl;
     status = SUCCESS;
     message = "Shutdown command has been received.";
     server.echo(createResponse());
@@ -291,7 +275,6 @@ void StartAppCommand::execute(Server& server, const string& param){
         message = "Application \\\"" + toRawString(app_name) + "\\\" started successfully.";
     } else {
         cerr << "Failed to start application: " << app_name << " (Error: " << GetLastError() << ")\n";
-        server.echo("failure");
         status = 1;
         message = "Start app error: Failed to start application \\\"" + toRawString(app_name) + "\\\".";
     }
@@ -463,3 +446,216 @@ void ScreenshotCommand::execute(Server& server, const string& param){
     // Shutdown GDI+
     GdiplusShutdown(gdiplusToken);
 }
+
+void ListSerCommand::listRunningServices() {
+    SC_HANDLE hSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE);
+    if (!hSCManager) {
+        cerr << "Failed to open Service Control Manager. Error: " << GetLastError() << endl;
+        return;
+    }
+
+    DWORD bytesNeeded = 0, servicesReturned = 0, resumeHandle = 0;
+    DWORD bufferSize = 0;
+
+    // First call to get the required buffer size
+    EnumServicesStatusEx(
+        hSCManager,
+        SC_ENUM_PROCESS_INFO,
+        SERVICE_WIN32,
+        SERVICE_ACTIVE, // Only active (running) services
+        nullptr,
+        0,
+        &bytesNeeded,
+        &servicesReturned,
+        &resumeHandle,
+        nullptr);
+
+    if (GetLastError() != ERROR_MORE_DATA) {
+        cerr << "Failed to enumerate services. Error: " << GetLastError() << endl;
+        CloseServiceHandle(hSCManager);
+        return;
+    }
+
+    bufferSize = bytesNeeded;
+    auto buffer = new BYTE[bufferSize];
+    ofstream fout(directory + "runningServiceList.txt");
+
+    if (EnumServicesStatusEx(
+            hSCManager,
+            SC_ENUM_PROCESS_INFO,
+            SERVICE_WIN32,
+            SERVICE_ACTIVE, // Only active (running) services
+            buffer,
+            bufferSize,
+            &bytesNeeded,
+            &servicesReturned,
+            &resumeHandle,
+            nullptr)) {
+        LPENUM_SERVICE_STATUS_PROCESS services = reinterpret_cast<LPENUM_SERVICE_STATUS_PROCESS>(buffer);
+        for (DWORD i = 0; i < servicesReturned; ++i) {
+            fout << "Service Name: " << services[i].lpServiceName << endl;
+            fout << "Display Name: " << services[i].lpDisplayName << endl;
+            fout << "Status: Running" << endl;
+            fout << "--------------------------------" << endl;
+        }
+    } else {
+        cerr << "Failed to enumerate services. Error: " << GetLastError() << endl;
+    }
+
+    fout.close();
+    delete[] buffer;
+    CloseServiceHandle(hSCManager);
+}
+
+void ListSerCommand::execute(Server& server, const string& param) {
+    listRunningServices();
+    string output_file = "runningServiceList.txt";
+    status = sendFile(server, directory + '\\' + output_file);
+    
+    file_name = "";
+    if (status == SUCCESS) {
+        file_name = output_file;
+        message = "Running Services listed successfully.";
+    }
+    else
+        message = "List service error: Could not list running services.";
+
+
+    server.echo(createResponse());
+}
+
+string TakePhotoCommand::detectWebcam(){
+    string webcamName = "";
+
+    HRESULT hr = CoInitialize(NULL);
+    if (FAILED(hr)) {
+        cerr << "Failed to initialize COM library." << endl;
+        return webcamName;
+    }
+
+    // Create the system device enumerator
+    ICreateDevEnum* pDevEnum = NULL;
+    hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER, IID_ICreateDevEnum, (void**)&pDevEnum);
+    if (FAILED(hr)) {
+        cerr << "Failed to create device enumerator." << endl;
+        CoUninitialize();
+        return webcamName;
+    }
+
+    // Enumerate video capture devices (webcams)
+    IEnumMoniker* pEnum = NULL;
+    hr = pDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pEnum, 0);
+    if (hr == S_OK) {
+        IMoniker* pMoniker = NULL;
+        ULONG fetched;
+        while (pEnum->Next(1, &pMoniker, &fetched) == S_OK) {
+            IPropertyBag* pPropBag;
+            hr = pMoniker->BindToStorage(0, 0, IID_IPropertyBag, (void**)&pPropBag);
+            if (hr == S_OK) {
+                VARIANT var;
+                VariantInit(&var);
+                hr = pPropBag->Read(L"FriendlyName", &var, 0);
+                if (hr == S_OK) {
+                    // Convert the webcam name from wide string to standard string
+                    wstring ws(var.bstrVal);
+                    webcamName = string(ws.begin(), ws.end());
+                    VariantClear(&var);
+                }
+                pPropBag->Release();
+            }
+            pMoniker->Release();
+
+            // Use the first webcam found
+            break;
+        }
+    } else {
+        cerr << "No webcams found." << endl;
+    }
+
+    if (pEnum) pEnum->Release();
+    pDevEnum->Release();
+    CoUninitialize();
+
+    return webcamName;
+}
+
+int TakePhotoCommand::takePhoto(){
+    string webcamName = detectWebcam();
+    if (webcamName.empty()) {
+        cerr << "Error: No webcam detected." << endl;
+        return FAILURE;
+    }
+
+    cout << "Detected Webcam: " << webcamName << endl;
+
+    // Construct the ffmpeg command with the detected webcam name
+    ostringstream cmd;
+    cmd << "\"ffmpeg.exe\" " //replace with your ffmpeg bin path
+            << "-f dshow -i video=\"" << webcamName << "\" "
+            << "-vframes 1 -rtbufsize 100M -y -update 1 "
+            << directory + "snapshot.png"; //replace with your path that you want to save as
+
+    // Initialize STARTUPINFO and PROCESS_INFORMATION structs
+    STARTUPINFO si = { sizeof(si) };
+    PROCESS_INFORMATION pi;
+
+    // Convert the string command to a C-string (LPSTR)
+    LPSTR cmdLine = _strdup(cmd.str().c_str());
+
+    // Create the process
+    if (CreateProcess(
+            NULL,        // Application name
+            cmdLine,     // Command line
+            NULL,        // Process security attributes
+            NULL,        // Thread security attributes
+            FALSE,       // Inherit handles
+            0,           // Creation flags
+            NULL,        // Environment block
+            NULL,        // Current directory
+            &si,         // Startup information
+            &pi          // Process information
+    )) {
+        cout << "Snapshot captured successfully!" << endl;
+
+        // Wait for the process to finish
+        WaitForSingleObject(pi.hProcess, INFINITE);
+
+        // Clean up handles
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    } else {
+        cerr << "Error: Failed to capture snapshot. Error code: " << GetLastError() << endl;
+        return FAILURE;
+    }
+
+    // Free the duplicated string
+    free(cmdLine);
+    return SUCCESS;
+}
+
+void TakePhotoCommand::execute(Server& server, const string& param){
+    status = takePhoto();
+    file_name = "";
+    string outfile = "snapshot.png";
+
+    if (status == SUCCESS){
+        status = sendFile(server, directory + '\\' + outfile);
+        if (status == SUCCESS){
+            file_name = "snapshot.png";
+            message = "Photo taken successfully\n\n";
+        }
+        else{
+            message = "Failed to send the photo to client\n\n";
+        }
+
+    }
+    else{
+        server.echo("error");
+        message = "Failed to take a photo\n\n";
+    }
+
+    server.echo(createResponse());
+}
+
+
+

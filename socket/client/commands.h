@@ -18,15 +18,27 @@ class GetFileCommand;
 class DeleteFileCommand;
 class ListAppCommand;
 class StartAppCommand;
+class StopAppCommand;
+class ListSerCommand;
+class StartSerCommand;
+class StopSerCommand;
+class TakePhotoCommand;
+class StartRecordCommand;
+class StopRecordCommand;
+class GetIPsCommand;
 
 class Command{
 protected:
     static const string directory;
     string response;
+    string command;
     string ip;
+    string parameter;
 public:
-    virtual void execute(Client& Client, const string& param) = 0;
-    void setIP(const string& ip);
+    virtual void execute(Client& Client) = 0;
+    void setCommandInfo(const string& ip, const string& command, const string& parameter);
+    virtual bool validateParameter() const = 0;
+    bool sendCommand(Client& Client);
     string getResponse();
 };
 
@@ -40,10 +52,10 @@ class ProcessCommand {
         unordered_map<string, Command*> commands;
 
         void updateSenderQuery();
-        string getCommand();
-        bool isValidIP(const string &ip);
-        string getIP();
-        string getParameter();
+        string getCommand() const;
+        bool isValidIP(const string &ip) const;
+        string getIP() const;
+        string getParameter() const;
         void sendResponse(const string& response_string, const Attachment& attachment = {});
         void processResponse();
     public:
@@ -56,56 +68,108 @@ class ProcessCommand {
 
 class ShutdownCommand : public Command{
 public:
-    void execute(Client& client, const string& param) override;
+    bool validateParameter() const override;
+    void execute(Client& client) override;
 };
 
 
 class ListFileCommand : public Command{
 private:
     vector<string> listFile(const string& path);
+    
 
 public:
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
 };
 
 class GetFileCommand : public Command{
 public:
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
 };
 
 
 class DeleteFileCommand : public Command{
 public:
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
 };
 
 
 class ListAppCommand : public Command{
 public:
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
 };
 
 class StartAppCommand : public Command{
 public: 
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
 };
 
 class StopAppCommand : public Command{
 public: 
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
 };
 
 class RestartCommand : public Command{
 public: 
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
 };
 
 class ScreenshotCommand : public Command{
 public: 
-    void execute(Client& client, const string& param) override;
+    void execute(Client& client) override;
+    bool validateParameter() const override;
+};
+
+class StartSerCommand : public Command{
+    public:
+        void execute(Client& client) override;
+        bool validateParameter() const override;
+};
+
+class StopSerCommand : public Command{
+    public:
+        void execute(Client& client) override;
+        bool validateParameter() const override;
+};
+class StartRecordCommand : public Command{
+    public:
+        void execute(Client& client) override;
+        bool validateParameter() const override;
+};
+
+class StopRecordCommand : public Command{
+    public:
+        void execute(Client& client) override;
+        bool validateParameter() const override;
+};
+
+class GetIPsCommand : public Command{
+    public:
+        void execute(Client& client) override;
+        bool validateParameter() const override;
 };
 
 class HelpCommand: public Command {
     public:
-        void execute(Client& client, const string& param) override;
+        void execute(Client& client) override;
+        bool validateParameter() const override;
+};
+
+class ListSerCommand: public Command {
+public:
+    void execute(Client& client) override;
+    bool validateParameter() const override;
+};
+
+class TakePhotoCommand : public Command{
+    public:
+        void execute(Client& client) override;
+        bool validateParameter() const override;
 };

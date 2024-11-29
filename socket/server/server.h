@@ -3,11 +3,12 @@
 #define WIN32_LEAN_AND_MEAN
 // #define _WIN32_WINNT 0x501
 
+#include <iostream>
+#undef byte
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
-#include <iostream>
 #include <string.h>
 #include <string>
 #include <fstream>
@@ -17,8 +18,7 @@
 #include <tchar.h>
 #include <psapi.h>
 #include <shellapi.h>
-#include <unordered_map>
-#include <gdiplus.h>
+
 
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -28,8 +28,9 @@
 #define DEFAULT_PORT "55555"
 #define DISCOVERY_PORT 6666
 
+typedef SHORT PROPID;
 using namespace std;
-using namespace Gdiplus;
+
 
 
 class Server;

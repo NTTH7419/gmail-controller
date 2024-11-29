@@ -1,32 +1,43 @@
 #include "server.h"
 #include <unordered_map>
-#include <gdiplus.h>
 #include <thread>
+#include <gdiplus.h>
+#include <dshow.h> 
+#include <sstream>
 #pragma comment(lib, "gdiplus.lib")
 
 #define SUCCESS 0
 #define FAILURE 1
 
+
 using namespace Gdiplus;
 
-typedef SHORT PROPID;
 
 class Command;
 class ReceiveCommand;
 class ShutdownCommand;
 class ListFileCommand;
 class GetFileCommand;
+class DeleteFileCommand;
 class ListAppCommand;
 class StartAppCommand;
+class StopAppCommand;
+class ListSerCommand;
+class StartSerCommand;
+class StopSerCommand;
+class TakePhotoCommand;
+class StartRecordCommand;
+class StopRecordCommand;
+
 class Command{
 protected:
-    static const string directory;
+    static const std::string directory;
     int status;
-    string file_name;   // name of the return file
-    string message;
+    std::string file_name;   // name of the return file
+    std::string message;
 public:
-    virtual void execute(Server& server, const string& param) = 0;
-    string createResponse();
+    virtual void execute(Server& server, const std::string& param) = 0;
+    std::string createResponse();
 };
 
 class ReceiveCommand {
@@ -97,4 +108,17 @@ class ScreenshotCommand : public Command{
         void execute(Server& server, const string& param) override;
 };
 
+class ListSerCommand : public Command{
+private:
+    void listRunningServices();
+public:
+    void execute(Server& server, const string& param) override;
+};
 
+class TakePhotoCommand : public Command{
+private:
+    string detectWebcam();
+    int takePhoto();
+public:
+    void execute(Server& server, const string& param) override;
+};
