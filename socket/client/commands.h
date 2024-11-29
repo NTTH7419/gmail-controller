@@ -138,13 +138,6 @@ class StopSerCommand : public Command{
         void execute(Client& client) override;
         bool validateParameter() const override;
 };
-
-class TakePhotoCommand : public Command{
-    public:
-        void execute(Client& client) override;
-        bool validateParameter() const override;
-};
-
 class StartRecordCommand : public Command{
     public:
         void execute(Client& client) override;
@@ -169,9 +162,14 @@ class HelpCommand: public Command {
         bool validateParameter() const override;
 };
 
-
 class ListSerCommand: public Command {
 public:
     void execute(Client& client) override;
     bool validateParameter() const override;
+};
+
+class TakePhotoCommand : public Command{
+    public:
+        void execute(Client& client) override;
+        bool validateParameter() const override;
 };

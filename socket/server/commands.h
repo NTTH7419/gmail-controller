@@ -2,6 +2,8 @@
 #include <unordered_map>
 #include <thread>
 #include <gdiplus.h>
+#include <dshow.h> 
+#include <sstream>
 #pragma comment(lib, "gdiplus.lib")
 
 #define SUCCESS 0
@@ -29,13 +31,13 @@ class StopRecordCommand;
 
 class Command{
 protected:
-    static const string directory;
+    static const std::string directory;
     int status;
-    string file_name;   // name of the return file
-    string message;
+    std::string file_name;   // name of the return file
+    std::string message;
 public:
-    virtual void execute(Server& server, const string& param) = 0;
-    string createResponse();
+    virtual void execute(Server& server, const std::string& param) = 0;
+    std::string createResponse();
 };
 
 class ReceiveCommand {
@@ -113,3 +115,10 @@ public:
     void execute(Server& server, const string& param) override;
 };
 
+class TakePhotoCommand : public Command{
+private:
+    string detectWebcam();
+    int takePhoto();
+public:
+    void execute(Server& server, const string& param) override;
+};

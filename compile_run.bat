@@ -9,7 +9,7 @@ if %input% == 1 (
 ) else (
     if %input% == 2 (
         cd .\socket\server
-        g++ -o server.exe *.cpp -lws2_32 -lpsapi -lgdiplus -lgdi32
+        g++ -o server.exe *.cpp -lws2_32 -lpsapi -lgdiplus -lgdi32 -lole32 -loleaut32 -lstrmiids
 	echo completed
 	pause
     ) else (

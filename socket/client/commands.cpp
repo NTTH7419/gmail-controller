@@ -491,10 +491,23 @@ void ListSerCommand::execute(Client& client) {
     }
     else{
         receiveFile(client, ip, directory);
-        client.receiveResponse(ip);
+        response = client.receiveResponse(ip);
     }
 }
 
 bool ListSerCommand::validateParameter() const{
     return true;
+}
+
+bool TakePhotoCommand::validateParameter() const{
+    return true;
+}
+
+void TakePhotoCommand::execute(Client& client){
+    if (!sendCommand(client)){
+        //response
+    }else{
+        receiveFile(client, ip, directory);
+        response = client.receiveResponse(ip);
+    }
 }

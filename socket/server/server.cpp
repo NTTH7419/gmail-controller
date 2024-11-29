@@ -187,6 +187,7 @@ void Server::echo(const string& message){
         cout << "Failed to send a response to the client, error: " << WSAGetLastError() << endl;
         return;
     }
+    cout << "message: " <<  message << " was sent successfully" << endl;
 }
 
 Server::~Server(){

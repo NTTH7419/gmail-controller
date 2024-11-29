@@ -122,6 +122,7 @@ string Client::receiveResponse(string ip){
     }
 
     string response(buffer);
+    cout << "message: " << response << " received" << endl;
 
     return response;
 }

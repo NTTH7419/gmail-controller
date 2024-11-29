@@ -67,6 +67,19 @@
 		"span": "cpp",
 		"stop_token": "cpp",
 		"variant": "cpp",
-		"typeindex": "cpp"
+		"typeindex": "cpp",
+		"csignal": "cpp",
+		"strstream": "cpp",
+		"bitset": "cpp",
+		"cfenv": "cpp",
+		"complex": "cpp",
+		"condition_variable": "cpp",
+		"list": "cpp",
+		"set": "cpp",
+		"regex": "cpp",
+		"source_location": "cpp",
+		"mutex": "cpp",
+		"shared_mutex": "cpp",
+		"stdfloat": "cpp"
 	}
 }
