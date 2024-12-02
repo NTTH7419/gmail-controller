@@ -130,7 +130,7 @@ void ProcessCommand::executeCommand(Client& client) {
         response = commands[command]->getResponse();
         processResponse();
         message.clear();
-        std::cout << "Command \"" << command << "\" has been executed";
+        std::cout << "Command \"" << command << "\" has been executed.\n";
         return;
     }
 

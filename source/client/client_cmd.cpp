@@ -219,27 +219,6 @@ bool ScreenshotCommand::validateParameter()  const {
     return true;
 }
 
-
-void HelpCommand::execute(Client& client) {
-    int status = SUCCESS;
-    std::stringstream ss;
-    std::ifstream fin(directory + '\\' + "help.txt");
-    if (fin.good()) {
-        ss << fin.rdbuf();
-        fin.close();
-    }
-    else {
-        status = FAILURE;
-        ss << "Help error: Cannot access the content of the help file.";
-    }
-
-    json j;
-    j["status"] = status;
-    j["message"] = ss.str();
-    j["file"] = "";
-    response = j.dump();
-}
-
 bool HelpCommand::validateParameter() const{
     return true;
 }
@@ -292,4 +271,106 @@ void TakePhotoCommand::execute(Client& client){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
+}
+
+void HelpCommand::execute(Client& client) {
+    int status = SUCCESS;
+    std::string help_text = R"(List of available commands:
+
+1/ Help:
+- Subject: help
+- Return list of available commands
+
+2/ Get IPs
+- Subject: getips
+- Return list of available computers and their IP andress
+
+3/ Shutdown:
+- Subject: shutdown
+- Body: IP (line 1)
+
+4/ Restart:
+- Subject: restart
+- Body: IP (line 1)
+
+5/ Application:
+a/ List Applications
+- Subject: listapp
+- Body: IP (line 1)
+- Return list of applications in .txt
+
+b/ Start Application:
+- Subject: startapp
+- Body: IP (line 1), Application name (line 2)
+
+c/ Stop Application:
+- Subject: stopapp
+- Body: IP (line 1), Application's PID (line 2)
+
+6/ Service:
+a/ List Services
+- Subject: listser
+- Body: IP (line 1)
+- Return list of services in .txt
+
+b/ Start Service:
+- Subject: startser
+- Body: IP (line 1), execution file/service name (line 2)
+
+c/ Stop Service:
+- Subject: stopser
+- Body: IP (line 1), execution file/service name (line 2)
+
+7/ File:
+a/ List File
+- Subject: listfile
+- Body: IP (line 1), directory path (line 2)
+- Return list of files in .txt
+
+b/ Get file
+- Subject: getfile
+- Body: IP (line 1), file path (line 2)
+- Return file as attachment
+
+c/ Delete File:
+- Subject: delfile
+- Body: IP (line 1), file path (line 2)
+
+8/ Screenshot
+- Subject: screenshot
+- Body: IP (line 1)
+- Return screenshot as attachment
+
+9/ Webcam
+a/ Take a photo
+- Subject: takephoto
+- Body: IP (line 1)
+- Return photo as attachment
+
+b/ Start recording video
+- Subject: startrecord
+- Body: IP (line 1)
+
+c/ Stop recording video
+- Subject: stoprecord
+- Body: IP (line 1)
+- Return video as attachment
+- Require startrecord to be called before, maximum video length: 120 seconds
+
+10/ Keylogger
+a/ Start recording keystroke
+- Subject: startkeylog
+- Body: IP (line 1)
+
+b/ Stop recording keystroke
+- Subject: stopkeylog
+- Body: IP (line 1)
+- Return keystroke as attachment
+- Require startkeylog to be called before, maximum time length: 300 seconds)";
+
+    json j;
+    j["status"] = status;
+    j["message"] = help_text;
+    j["file"] = "";
+    response = j.dump();
 }
