@@ -125,7 +125,7 @@ void ProcessCommand::executeCommand(Client& client) {
     }
 
     // commands that does not require connection to server
-    if (command == "help"|| command == "getips") {
+    if (command == "help" || command == "getips") {
         commands[command]->execute(client);
         response = commands[command]->getResponse();
         processResponse();
