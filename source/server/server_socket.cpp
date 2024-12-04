@@ -24,37 +24,6 @@ void Server::initialize(){
     broadcastDiscovery();
 }
 
-void Server::broadcastIP(){
-    SOCKET udp_send = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-    if (udp_send == INVALID_SOCKET) {
-        std::cerr << "UDP socket creation failed." << std::endl;
-        return;
-    }
-
-    BOOL broadcast = TRUE;
-    if (setsockopt(udp_send, SOL_SOCKET, SO_BROADCAST, (char*)&broadcast, sizeof(broadcast)) == SOCKET_ERROR){
-        std::cerr << "Set broadcast option failed." << std::endl;
-        closesocket(udp_send);
-        return;
-    }
-
-    sockaddr_in broadcastAddr;
-    broadcastAddr.sin_family = AF_INET;
-    broadcastAddr.sin_port = DISCOVERY_PORT;
-    broadcastAddr.sin_addr.s_addr = inet_addr("255.255.255.255");
-
-    std::string server_info = std::string(hostname) + "|" + ip;
-
-    if (sendto(udp_send, server_info.c_str(), server_info.length(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) == SOCKET_ERROR) {
-        std::cerr << "Broadcast failed: " << WSAGetLastError() << std::endl;
-    }
-
-    std::cout << "IP broadcasted successfully" << std::endl;
-    closesocket(udp_send);
-
-}
-
 void Server::broadcastDiscovery(){
     SOCKET udp_discovery = socket(AF_INET, SOCK_DGRAM, 0);
     sockaddr_in serverAddr, clientAddr;
@@ -188,6 +157,13 @@ void Server::echo(const std::string& message){
         return;
     }
     std::cout << "message: " <<  message << " was sent successfully" << std::endl;
+}
+
+bool Server::isClientAlive(){
+    if (recv(client_socket, buffer, buffer_len, MSG_PEEK) < 0){
+        return false;
+    }
+    return true;
 }
 
 Server::~Server(){

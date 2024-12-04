@@ -57,13 +57,15 @@ public:
     Server();
     void initialize();
     int listenForConnection();
-    void broadcastIP();
+
     void broadcastDiscovery();
 
     SOCKET& getClientSocket();
     int process(std::string);
     std::string receive();
     void echo(const std::string& message);
+
+    bool isClientAlive();
     ~Server();
 };
 

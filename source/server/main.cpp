@@ -7,8 +7,15 @@ int __cdecl main(void) {
 
     if (server.listenForConnection() == 0) {
 		while (true) {
-			rc.getLatestCommand(server);
-			rc.executeCommand(server);
+			if (server.isClientAlive()) {
+				rc.getLatestCommand(server);
+				rc.executeCommand(server);
+			}
+			else{
+				cout << "No client available!" << endl;
+				server.broadcastDiscovery();
+				server.listenForConnection();
+			}
 		}
 	}
 	

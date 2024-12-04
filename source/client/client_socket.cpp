@@ -34,7 +34,8 @@ void Client::sendDiscovery(){
 
     // bind(udp_discovery, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     // Broadcast the discovery message
-    std::cout << "mogga: " << sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr)) << std::endl;
+    std::cout << "Scanning for available computer servers..." << std::endl;
+    sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     int bytes_received;  
     
     timeval timeout;
@@ -50,7 +51,6 @@ void Client::sendDiscovery(){
             std::cout << "Computer: " << buffer << std::endl;
             std::string ip = std::string(buffer);
             ip = ip.substr(ip.find("|") + 1);
-            std::cout << ip << std::endl; 
             if (connectToServer(ip.c_str()) == true){
                 ips.push_back(std::string(buffer));
             }
