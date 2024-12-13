@@ -274,8 +274,6 @@ void StopKeylogCommand::execute(Client& client) {
 }
 
 
-
-
 void HelpCommand::execute(Client& client) {
     int status = SUCCESS;
     std::string help_text = R"(List of available commands:

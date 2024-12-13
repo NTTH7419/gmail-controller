@@ -8,8 +8,11 @@
 
 using namespace std;
 
-#define PRESSED	1
-#define RUNNING 2
+#define KL_PRESSED	1
+
+#define KL_WAITING 0
+#define KL_RUNNING 1
+#define KL_FINISHED 2
 
 class KeyLogger {
 	private:
@@ -23,7 +26,7 @@ class KeyLogger {
 
 		// for singleton
 		KeyLogger() = delete;
-		KeyLogger(const string& file_name) : file_name(file_name), status(0), running(false) {}
+		KeyLogger(const string& file_name) : file_name(file_name), status(KL_WAITING), running(false) {}
 		KeyLogger(const KeyLogger& kl) = delete;
 		KeyLogger& operator=(const KeyLogger& kl) = delete;
 		static KeyLogger* instance;

