@@ -853,7 +853,7 @@ int __stdcall DoStopSvc(std::string szSvcName)
 }
 
 void StopSerCommand::execute(Server& server, const std::string& param){
-    status = DoStartSvc(param);
+    status = DoStopSvc(param);
     file_name = "";
 
     if (status == FAILURE){

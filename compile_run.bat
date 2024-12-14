@@ -13,12 +13,12 @@ if %input% == 1 (
     ) else (
         if %input% == 3 (
             cd .\release\client
-            client.exe
+            powershell -command "Start-Process client.exe -Verb runas"
 	    pause
         ) else (
             if %input% == 4 (
                 cd .\release\server
-                server.exe
+                powershell -command "Start-Process server.exe -Verb runas"
 		pause
             ) else (
                 echo Invalid command

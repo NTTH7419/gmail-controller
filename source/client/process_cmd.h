@@ -2,6 +2,7 @@
 
 class ProcessCommand {
     private:
+        HWND& hwndMain;
         static const std::string directory;
         GmailAPI gmailapi;
         Message message;
@@ -17,7 +18,9 @@ class ProcessCommand {
         void sendResponse(const std::string& response_string, const Attachment& attachment = {});
         void processResponse();
     public:
-        ProcessCommand();
+        void displayLog(const std::string& log);
+        ProcessCommand(HWND& hwndMain);
+        // ProcessCommand();
         ~ProcessCommand();
         void executeCommand(Client& client);
         bool getLatestMessage();

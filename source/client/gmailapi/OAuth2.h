@@ -24,6 +24,7 @@ struct Token {
 
 class OAuth {
 	private:
+		HWND& hwndMain;
 		Credential credential;
 		std::string client_secret_file;
 
@@ -41,7 +42,7 @@ class OAuth {
 		void login();
 	
 	public:
-		OAuth();
+		OAuth(HWND& hwndMain);
 		~OAuth();
 		void init();
 		std::string getAccessToken();

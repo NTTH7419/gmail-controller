@@ -2,7 +2,7 @@
 
 const std::string ProcessCommand::directory = "temp\\";
 
-ProcessCommand::ProcessCommand() : message(), response() {
+ProcessCommand::ProcessCommand(HWND& hwndMain) : message(), response(), hwndMain(hwndMain), gmailapi(hwndMain) {
     updateSenderQuery();
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"getips", new GetIPsCommand},
@@ -113,6 +113,14 @@ std::string ProcessCommand::getParameter() const{
     return param;
 }
 
+void ProcessCommand::displayLog(const std::string& log){
+    time_t curr_time;
+	curr_time = time(NULL);
+
+	tm *tm_local = localtime(&curr_time);
+    PostMessage(hwndMain, WM_APP, 0, (LPARAM)new std::string("[" + std::to_string(tm_local->tm_hour) + ":" + std::to_string(tm_local->tm_min) + ":" + std::to_string(tm_local->tm_sec) + "]" + log));
+}
+
 //! Remember to delete couts
 void ProcessCommand::executeCommand(Client& client) {
     if (message.isEmpty()) return;
@@ -126,8 +134,10 @@ void ProcessCommand::executeCommand(Client& client) {
         error_response = "You have entered the wrong command.\n";
         error_response += "Please try again, or send command \"help\" to get the list of available commands.";
         sendResponse(error_response);
+        displayLog(error_response);
         message.clear();
         std::cerr << "Wrong command" << std::endl;
+
         return;
     }
 
@@ -135,9 +145,9 @@ void ProcessCommand::executeCommand(Client& client) {
     if (command == "help" || command == "getips") {
         commands[command]->execute(client);
         response = commands[command]->getResponse();
+        displayLog("Command \"" + command + "\" has been executed.\n");
         processResponse();
         message.clear();
-        std::cout << "Command \"" << command << "\" has been executed.\n";
         return;
     }
 
@@ -157,6 +167,7 @@ void ProcessCommand::executeCommand(Client& client) {
         commands[command]->setCommandInfo(ip, command, param);
         commands[command]->execute(client);
         response = commands[command]->getResponse();
+        
     }
 
     processResponse();
@@ -194,6 +205,7 @@ void ProcessCommand::processResponse() {
     try {
         j = json::parse(response);
         if (j["status"] == -1) {
+            displayLog("An error has occur when executing the command\n");
             sendResponse("An error has occur when executing the command");
             return;
         }
@@ -202,8 +214,13 @@ void ProcessCommand::processResponse() {
         else
             sendResponse(j["message"]);
 
+        std::string res = j["message"];
+        res += '\n';
+        displayLog(res);
+
     }
     catch (std::exception& e) {
         sendResponse("An error has occur when processing server response.");
+        displayLog("An error has occur when executing the command\n");
     }
 }

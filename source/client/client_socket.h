@@ -29,6 +29,7 @@ class Client;
 
 class Client{
 private:
+    HWND& hwndMain;
     WSADATA wsaData;
     std::unordered_map<std::string, SOCKET> server_sockets;
     std::vector<std::string> ips;
@@ -39,13 +40,14 @@ private:
     int buffer_len = DEFAULT_BUFLEN;
 
 public:
-    Client();
+    Client(HWND& hwndMain);
+    void displayLog(const std::string& log);
     void initialize();
     void sendDiscovery();
     SOCKET getServerSocket(std::string ip);
     bool connectToServer(const char* address);
     std::string receiveResponse(std::string ip);
-    std::vector<std::string> getIPList() const;
+    std::vector<std::string> getIPList();
     ~Client();
 };
 

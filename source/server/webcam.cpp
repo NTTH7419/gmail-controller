@@ -154,7 +154,7 @@ int WebcamController::StartRecord(std::string& message){
     si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
     std::ostringstream command;
-    command << "\"ffmpeg.exe\" " //replace with your ffmpeg bin path
+    command << "\"ffmpeg.exe\" -hide_banner -loglevel quiet " //replace with your ffmpeg bin path
             << "-f dshow -i video=\"" << webcamName << "\" "
             << "-c:v libx264 -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y "
             << "\"" + directory + "video.mp4\""; //replace with your path that you want to save as

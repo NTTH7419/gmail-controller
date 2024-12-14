@@ -42,7 +42,7 @@ void Server::broadcastDiscovery(){
         
         std::cout << "Sending server info" << std::endl;
 
-        std::string response = std::string(hostname) + "|" + ip;
+        std::string response = std::string(hostname) + ": " + ip;
         sendto(udp_discovery, response.c_str(), response.size(), 0, (sockaddr*)&clientAddr, clientAddrLen);
     }
 
@@ -160,7 +160,7 @@ void Server::echo(const std::string& message){
 }
 
 bool Server::isClientAlive(){
-    if (recv(client_socket, buffer, buffer_len, MSG_PEEK) < 0){
+    if (recv(client_socket, buffer, buffer_len, MSG_PEEK) <= 0){
         return false;
     }
     return true;

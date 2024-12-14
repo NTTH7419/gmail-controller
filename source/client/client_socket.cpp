@@ -1,13 +1,22 @@
 #include "client_socket.h"
 
-Client::Client(){
+Client::Client(HWND& hwndMain) : hwndMain(hwndMain){
 
+}
+
+void Client::displayLog(const std::string& log){
+    time_t curr_time;
+	curr_time = time(NULL);
+
+	tm *tm_local = localtime(&curr_time);
+    PostMessage(hwndMain, WM_APP, 0, (LPARAM)new std::string("[" + std::to_string(tm_local->tm_hour) + ":" + std::to_string(tm_local->tm_min) + ":" + std::to_string(tm_local->tm_sec) + "]" + log));
 }
 
 void Client::initialize(){
     int error = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (error != 0) {
-        std::cout << "WSAStartup failed with error: " << error << std::endl;
+        // std::cout << "WSAStartup failed with error: " << error << std::endl;
+        displayLog("WSAStartup failed with error: " + error + '\n');
         return;
     }
     std::cout << "WSAStartup succeeded" << std::endl;
@@ -35,6 +44,7 @@ void Client::sendDiscovery(){
     // bind(udp_discovery, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     // Broadcast the discovery message
     std::cout << "Scanning for available computer servers..." << std::endl;
+    displayLog("Scanning for available computer servers...\n");
     sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     int bytes_received;  
     
@@ -50,7 +60,7 @@ void Client::sendDiscovery(){
             buffer[bytes_received] = '\0';
             std::cout << "Computer: " << buffer << std::endl;
             std::string ip = std::string(buffer);
-            ip = ip.substr(ip.find("|") + 1);
+            ip = ip.substr(ip.find(": ") + 2);
             if (connectToServer(ip.c_str()) == true){
                 ips.push_back(std::string(buffer));
             }
@@ -71,7 +81,16 @@ void Client::sendDiscovery(){
     closesocket(udp_discovery);
 }
 
-std::vector<std::string> Client::getIPList() const{ 
+std::vector<std::string> Client::getIPList(){ 
+    std::vector<std::string> result;
+
+    for (int i = 0; i < ips.size(); i++) {
+        std::string ip = (ips[i]).substr(ips[i].find(": ") + 2);
+        if (send(server_sockets[ip], "", 0, 0) == SOCKET_ERROR){
+            ips.erase(ips.begin() + i);
+        }
+    }
+
     return ips;
 }
 
@@ -81,7 +100,7 @@ bool Client::connectToServer(const char* address){
         std::cout << "getaddrinfo failed with error: " << error;
         return false;
     }
-
+    
     server_sockets[std::string(address)] = INVALID_SOCKET;
     for(ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 
@@ -108,6 +127,7 @@ bool Client::connectToServer(const char* address){
         return false;
     }
     std::cout << "Connected to " << address << std::endl;
+    displayLog("Connected to" + std::string(address) + "\n");
 
     freeaddrinfo(result);
     return true;
