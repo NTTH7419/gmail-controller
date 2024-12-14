@@ -14,6 +14,8 @@ struct HTTPResponse {
 	std::string body;
 	
 	std::string getHeader(const std::string& name);
+	int getStatus();
+	HTTPResponse(): headers(), body() {}
 };
 
 HTTPResponse makeRequest(const std::string& request_url, curl_slist *headers, const std::string& postFields, const std::string& type);

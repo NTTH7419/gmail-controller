@@ -1,13 +1,19 @@
 #include "tool.h"
 
 std::string HTTPResponse::getHeader(const std::string& name) {
-    std::string value;
+    std::string value = "";
     int pos = headers.find(name);
     if (pos == std::string::npos) return value;
     int pos2 = headers.find('\n', pos);
     if (pos2 == std::string::npos) return value;
     value = trim(headers.substr(pos + name.size() + 2, pos2 - (pos + name.size() + 2)));
     return value;
+}
+
+int HTTPResponse::getStatus() {
+    if (headers.empty()) return 0;
+    int idx = headers.find(' ');
+    return stoi(headers.substr(idx + 1, 3));
 }
 
 size_t writeCallback(void* contents, size_t size, size_t nmemb, void* userp) {
@@ -17,9 +23,9 @@ size_t writeCallback(void* contents, size_t size, size_t nmemb, void* userp) {
 }
 
 size_t headerCallback(char* buffer, size_t size, size_t nitems, void* headers) {
-    size_t headerSize = size * nitems;
-    ((std::string*)headers)->append(buffer, headerSize);
-    return headerSize;
+    size_t header_size = size * nitems;
+    ((std::string*)headers)->append(buffer, header_size);
+    return header_size;
 }
 
 HTTPResponse makeRequest(const std::string& request_url, curl_slist *headers, const std::string& post_fields, const std::string& type) {

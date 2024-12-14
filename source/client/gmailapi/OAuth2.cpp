@@ -7,7 +7,7 @@ std::string OAuth::getAuthCode() {
 	
 	int idx = url.find("code=");
 	if (idx == std::string::npos) {
-        return " ";
+        return "";
     }
 	
     std::string auth_code = url.erase(0, idx + 5);
@@ -26,7 +26,7 @@ void OAuth::openGoogleLogin() {
     const std::string prompt = "consent";
 
 	// construct url
-    std::string auth_url = credential.auth_uri.c_str();
+    std::string auth_url = credential.auth_uri;
     auth_url += "?client_id=" + credential.client_id;
     auth_url += "&redirect_uri=" + credential.redirect_uri;
     auth_url += "&response_type=" + response_type;
@@ -55,19 +55,22 @@ void OAuth::login() {
 	openGoogleLogin();
 
     std::string auth_code = getAuthCode();
-    if (auth_code == "") {
+    if (auth_code.empty()) {
         is_error = true;
         error_message = "Auth code not found.";
+        return;
     }
 
 	std::string token_response = getTokenResponse(auth_code);
-    if (token_response == "") {
+    if (token_response.empty()) {
         is_error = true;
         error_message = "Token response not found.";
+        return;
     }
 
+
     json j = json::parse(token_response);
-    if (j.contains("access_token")) {
+    if (j.contains("access_token") && j.contains("refresh_token") && j.contains("expires_in")) {
         token.access_token = j["access_token"];
         token.refresh_token = j["refresh_token"];
         token.refresh_time = time(0) + int(int(j["expires_in"]) * 0.9);
@@ -76,7 +79,10 @@ void OAuth::login() {
     else {
         is_error = true;
         error_message = "No access token found";
+        return;
     }
+    is_error = false;
+    error_message.clear();
 }
 
 std::string OAuth::getAccessToken() {
@@ -101,18 +107,21 @@ void OAuth::refreshToken() {
                          "&client_secret=" + credential.client_secret +
                          "&grant_type=refresh_token";
 
-    std::string token_response = makeRequest(url, NULL, post_fields, "POST").body;    
+    std::string token_response = makeRequest(url, NULL, post_fields, "POST").body;
 
     json j = json::parse(token_response);
-    if (j.contains("access_token")) {
+    if (j.contains("access_token") && j.contains("expires_in")) {
         token.access_token = j["access_token"];
         token.refresh_time = time(0) + int(int(j["expires_in"]) * 0.9);
         writeTokenToFile();
     }
+    // Token has been expired or revoked, or something else
     else {
-        is_error = true;
-        error_message = "No access token found";
+        login();
     }
+
+    is_error = false;
+    error_message.clear();
 }
 
 void OAuth::writeTokenToFile() {
@@ -121,26 +130,38 @@ void OAuth::writeTokenToFile() {
     fout.close();
 }
 
-OAuth::OAuth() : client_secret_file("client_secret.json"), token_file("token.txt") {
-
+void OAuth::init() {
     json j;
-    std::ifstream fin(client_secret_file);
-    j = json::parse(fin);
-    fin.close();
-    credential.client_id = j["installed"]["client_id"];
-    credential.client_secret = j["installed"]["client_secret"];
-    credential.auth_uri = j["installed"]["auth_uri"];
-    credential.token_uri = j["installed"]["token_uri"];
-    credential.redirect_uri = j["installed"]["redirect_uris"][0];
+    try {
+        std::ifstream fin(client_secret_file);
+        j = json::parse(fin);
+        fin.close();
+        credential.client_id = j["installed"]["client_id"];
+        credential.client_secret = j["installed"]["client_secret"];
+        credential.auth_uri = j["installed"]["auth_uri"];
+        credential.token_uri = j["installed"]["token_uri"];
+        credential.redirect_uri = j["installed"]["redirect_uris"][0];
+    }
+    catch(...) {
+        error_message = "\"client_secret.json\" is not found or has wrong format";
+        is_error = true;
+    }
 
-    fin.open(token_file);
-    if (fin >> token.refresh_token) {
-        fin >> token.access_token >> token.refresh_time;
-    }
-    else {
-        login();
+    std::ifstream fin(token_file);
+    if (!(fin >> token.refresh_token) ||
+        !(fin >> token.access_token) ||
+        !(fin >> token.refresh_time)) {
+            login();
     }
     fin.close();
+
+    refreshToken();
+
+    is_error = false;
+    error_message.clear();
 }
+
+OAuth::OAuth() : client_secret_file("client_secret.json"), token_file("token.txt"),
+                    is_error(true), error_message("OAuth hasn't been initialized") {}
 
 OAuth::~OAuth() {}

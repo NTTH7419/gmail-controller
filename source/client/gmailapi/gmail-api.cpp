@@ -48,6 +48,10 @@ bool Attachment::exist() const {
     return (!file_name.empty() && !file_content.empty());
 }
 
+
+
+
+
 std::string Message::getGmailID() const {
     return gmail_id;
 }
@@ -152,51 +156,79 @@ bool Message::isEmpty() const {
 }
 
 void Message::clear() {
-    gmail_id = "";
-    in_reply_to = "";
-    from = "";
-    to = "";
-    subject = "";
-    body = "";
+    gmail_id.clear();
+    in_reply_to.clear();
+    from.clear();
+    to.clear();
+    subject.clear();
+    body.clear();
 }
+
+
+
+
 
 
 void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachment& attachment) {
     std::string text_message = message.getMessage(attachment);
     int message_length = text_message.length();
 
+    if (message_length > 25 * 1024 * 1024) {// 25 MB
+        throw std::runtime_error("Attachment too large, limit is 25MB");
+    }
+
+    std::string token = oauth.getAccessToken();
+
     // init upload
     std::string url = "https://www.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=resumable";
     curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
     headers = curl_slist_append(headers, "Content-Length: 0");
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
     headers = curl_slist_append(headers, "X-Upload-Content-Type: message/rfc822");
     headers = curl_slist_append(headers, ("X-Upload-Content-Length: " + std::to_string(message_length)).c_str());
 
-    std::string session_uri = makeRequest(url, headers, "", "POST").getHeader("Location");
+    HTTPResponse response = makeRequest(url, headers, "", "POST");
+    json j = response.body;
+    if (j.contains("error")) {
+        throw std::runtime_error(j["error"]["errors"]["message"]);
+    }
+
+    std::string session_uri = response.getHeader("Location");
+    if (session_uri.empty()) {
+        throw std::runtime_error("Cannot init uploading");
+    }
 
     // uploading
     headers = NULL;
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
     headers = curl_slist_append(headers, "Content-Type: message/rfc822");
     headers = curl_slist_append(headers, ("Content-Length: " + std::to_string(message_length)).c_str());
 
-    makeRequest(session_uri, headers, text_message, "PUT");
+    response = makeRequest(session_uri, headers, text_message, "PUT");
+    if (response.getStatus() != 200) {
+        throw std::runtime_error("Cannot send message");
+    }
+
 }
 
 void GmailAPI::sendMessageWithoutAttachment(const Message& message) {
+    std::string token = oauth.getAccessToken();
+
     std::string encoded_message = base64_encode(message.getMessage());
     
     std::string post_fields = R"({"raw": ")" + encoded_message + R"("})";
 
     curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
 
     std::string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
 
-    makeRequest(url, headers, post_fields, "POST");
+    HTTPResponse response = makeRequest(url, headers, post_fields, "POST");
+    if (response.getStatus() != 200) {
+        throw std::runtime_error("Cannot send message");
+    }
 }
 
 void GmailAPI::sendMessage(const Message& message, const Attachment& attachment) {
@@ -209,33 +241,45 @@ void GmailAPI::sendMessage(const Message& message, const Attachment& attachment)
 }
 
 std::string GmailAPI::getLatestMessageID(const std::string& query) {
+    std::string token = oauth.getAccessToken();
+
     curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
 
     std::string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
            url += "?maxResults=1&includeSpamTrash=true&q=" + urlEncode(query);
 
-    std::string response = makeRequest(url, headers, "", "GET").body;
+    HTTPResponse response = makeRequest(url, headers, "", "GET");
+    if (response.getStatus() != 200) {
+        throw std::runtime_error("Cannot retrieve message");
+    }
 
-    json j = json::parse(response);
+    json j = json::parse(response.body);
     if (j.contains("messages")) return j["messages"][0]["id"];
     else return "";
 }
 
 void GmailAPI::markAsRead(const std::string& message_id) {
+    std::string token = oauth.getAccessToken();
+
     curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
 
     std::string post_fields = R"({"removeLabelIds": ["UNREAD"]})";
 
     std::string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + message_id + "/modify";
 
-    makeRequest(url, headers, post_fields, "POST");
+    HTTPResponse response = makeRequest(url, headers, post_fields, "POST");
+    if (response.getStatus() != 200) {
+        throw std::runtime_error("Cannot mark message as read");
+    }
 }
 
 Message GmailAPI::getLatestMessage(const std::string& query) {
+    std::string token = oauth.getAccessToken();
+
     Message message;
 
     std::string id = getLatestMessageID(query);
@@ -245,30 +289,38 @@ Message GmailAPI::getLatestMessage(const std::string& query) {
 
     curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
-    headers = curl_slist_append(headers, ("Authorization: Bearer " + oauth.getAccessToken()).c_str());
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
 
     std::string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full";
 
-    std::string response = makeRequest(url, headers, "", "GET").body;
-
-    json j = json::parse(response);
-
-    message.setGmailID(j["id"]);
-
-    auto response_headers = j["payload"]["headers"];
-    for (auto header: response_headers) {
-        if (header["name"] == "Delivered-To") message.setToEmail(header["value"]);
-        if (header["name"] == "From") {
-            if (std::string(header["value"]).find('\u003c') != std::string::npos)
-                message.setFromEmail(getStringBetween(std::string(header["value"]), "\u003c", "\u003e"));
-            else
-                message.setFromEmail(header["value"]);
-        }
-        if (header["name"] == "Subject") message.setSubject(header["value"]);
-        if (header["name"] == "Message-ID") message.setMessageID(header["value"]);
+    HTTPResponse response = makeRequest(url, headers, "", "GET");
+     if (response.getStatus() != 200) {
+        throw std::runtime_error("Cannot retrive message");
     }
 
-    message.setBody(trim(base64_decode(j["payload"]["parts"][0]["body"]["data"])));
+    try {
+        json j = json::parse(response.body);
+
+        message.setGmailID(j["id"]);
+
+        auto response_headers = j["payload"]["headers"];
+        for (auto header: response_headers) {
+            if (header["name"] == "Delivered-To") message.setToEmail(header["value"]);
+            if (header["name"] == "From") {
+                if (std::string(header["value"]).find('\u003c') != std::string::npos)
+                    message.setFromEmail(getStringBetween(std::string(header["value"]), "\u003c", "\u003e"));
+                else
+                    message.setFromEmail(header["value"]);
+            }
+            if (header["name"] == "Subject") message.setSubject(header["value"]);
+            if (header["name"] == "Message-ID") message.setMessageID(header["value"]);
+        }
+
+        message.setBody(trim(base64_decode(j["payload"]["parts"][0]["body"]["data"])));
+    }
+    catch (...) {
+        throw std::runtime_error("Cannot retrieve message");
+    }
 
     return message;
 }
@@ -278,4 +330,13 @@ void GmailAPI::replyMessage(const Message& message, Message& reply_content, cons
     reply_content.setFromEmail(message.getToEmail());
     reply_content.setToEmail(message.getFromEmail());
     sendMessage(reply_content, attachment);
+}
+
+GmailAPI::GmailAPI() : oauth() {}
+
+void GmailAPI::initOAuth() {
+    oauth.init();
+    if (!oauth.good()) {
+        throw std::runtime_error(oauth.getErrorMessage());
+    }
 }

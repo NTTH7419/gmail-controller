@@ -30,7 +30,7 @@ class OAuth {
 		Token token;
 		std::string token_file;
 
-		bool is_error = false;
+		bool is_error;
 		std::string error_message;
 
 		void openGoogleLogin();
@@ -38,11 +38,12 @@ class OAuth {
 		std::string getTokenResponse(const std::string& auth_code);
 		void writeTokenToFile();
 		void refreshToken();
+		void login();
 	
 	public:
 		OAuth();
 		~OAuth();
-		void login();
+		void init();
 		std::string getAccessToken();
 		bool good();
 		std::string getErrorMessage();

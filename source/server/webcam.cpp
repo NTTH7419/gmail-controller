@@ -75,10 +75,10 @@ int WebcamController::takePhoto(std::string& message){
     }
 
     std::ostringstream cmd;
-    cmd << "\"ffmpeg.exe\" " //replace with your ffmpeg bin path
+    cmd << "\"ffmpeg.exe\" "
             << "-f dshow -i video=\"" << webcamName << "\" "
             << "-vframes 1 -rtbufsize 100M -y -update 1 "
-            << directory + "snapshot.png"; //replace with your path that you want to save as
+            << directory + "snapshot.png";
 
     // Initialize STARTUPINFO and PROCESS_INFORMATION structs
     STARTUPINFO si = { sizeof(si) };
