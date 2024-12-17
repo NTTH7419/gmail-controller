@@ -252,7 +252,7 @@ std::string GmailAPI::getLatestMessageID(const std::string& query) {
 
     HTTPResponse response = makeRequest(url, headers, "", "GET");
     if (response.getStatus() != 200) {
-        throw std::runtime_error("Cannot retrieve message");
+        throw std::runtime_error("Cannot retrieve message id.");
     }
 
     json j = json::parse(response.body);
@@ -261,6 +261,8 @@ std::string GmailAPI::getLatestMessageID(const std::string& query) {
 }
 
 void GmailAPI::markAsRead(const std::string& message_id) {
+    if(message_id.empty()) return;
+    
     std::string token = oauth.getAccessToken();
 
     curl_slist *headers = NULL;
@@ -273,7 +275,7 @@ void GmailAPI::markAsRead(const std::string& message_id) {
 
     HTTPResponse response = makeRequest(url, headers, post_fields, "POST");
     if (response.getStatus() != 200) {
-        throw std::runtime_error("Cannot mark message as read");
+        throw std::runtime_error("Cannot mark message as read.");
     }
 }
 
@@ -294,8 +296,8 @@ Message GmailAPI::getLatestMessage(const std::string& query) {
     std::string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full";
 
     HTTPResponse response = makeRequest(url, headers, "", "GET");
-     if (response.getStatus() != 200) {
-        throw std::runtime_error("Cannot retrive message");
+    if (response.getStatus() != 200) {
+        throw std::runtime_error("Cannot retrive message.");
     }
 
     try {
@@ -319,7 +321,7 @@ Message GmailAPI::getLatestMessage(const std::string& query) {
         message.setBody(trim(base64_decode(j["payload"]["parts"][0]["body"]["data"])));
     }
     catch (...) {
-        throw std::runtime_error("Cannot retrieve message");
+        throw std::runtime_error("Cannot retrieve message.");
     }
 
     return message;

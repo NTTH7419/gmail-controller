@@ -12,7 +12,7 @@ int __cdecl main(void) {
 				rc.executeCommand(server);
 			}
 			else{
-				cout << "No client available!" << endl;
+				std::cout << "No client available!" << std::endl;
 				server.broadcastDiscovery();
 				server.listenForConnection();
 			}

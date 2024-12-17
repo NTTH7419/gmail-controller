@@ -27,13 +27,13 @@ public:
     HINSTANCE hInst;
     HWND hwndMain, hwndEdit, hwndShowIp;
     std::atomic<bool> stopFetching;
-    Client c;
+    Client client;
         
 
     ProcessCommand pc;
 
     GUI(HINSTANCE hInstance)
-        : hInst(hInstance), hwndMain(nullptr), hwndEdit(nullptr), stopFetching(false), pc(hwndMain), c(hwndMain){
+        : hInst(hInstance), hwndMain(nullptr), hwndEdit(nullptr), stopFetching(false), pc(hwndMain), client(hwndMain){
             
         }
 
@@ -109,7 +109,7 @@ public:
             {
                 std::stringstream ss;
                 
-                for (const auto& item : gui->c.getIPList()) {
+                for (const auto& item : gui->client.getIPList()) {
                     ss << item << "\n";
                 }
                 MessageBox(gui->hwndMain, ss.str().c_str(), TEXT("List of available IPs"), MB_OK);
@@ -145,9 +145,10 @@ public:
     HWND& getWindow() {
         return hwndMain;
     }
+    
     void FetchServerResponse() {
-        c.initialize();
-        c.sendDiscovery();
+        client.initialize();
+        client.sendDiscovery();
 
         while (!stopFetching.load()) {
             if (!pc.getLatestMessage()) {
@@ -156,7 +157,7 @@ public:
                 continue;
             }
 
-            pc.executeCommand(c);
+            pc.executeCommand(client);
         }
     }
 };

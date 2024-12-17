@@ -2,7 +2,7 @@
 
 const std::string ProcessCommand::directory = "temp\\";
 
-ProcessCommand::ProcessCommand(HWND& hwndMain) : message(), response(), hwndMain(hwndMain), gmailapi(hwndMain) {
+ProcessCommand::ProcessCommand(HWND& hwndMain) : message(), response(), hwndMain(hwndMain), gmailapi() {
     updateSenderQuery();
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"getips", new GetIPsCommand},
@@ -75,32 +75,10 @@ std::string ProcessCommand::getCommand() const{
     return command;
 }
 
-bool ProcessCommand::isValidIP(const std::string &ip) const{
-    // Define a regular expression for a valid IPv4 address
-    const std::regex pattern("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$");
-    std::smatch match;
-
-    // Check if IP matches the pattern
-    if (regex_match(ip, match, pattern)) {
-        // Validate each octet is within the range 0-255
-        for (int i = 1; i <= 4; ++i) {
-            int octet = std::stoi(match[i].str());
-            if (octet < 0 || octet > 255) {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
 std::string ProcessCommand::getIP() const{
     std::string body = message.getBody();
     std::string ip = body.substr(0, body.find("\r\n"));
-    if (isValidIP(ip))
-        return ip;
-    else
-        return "invalid";
+    return ip;
 }
 
 std::string ProcessCommand::getParameter() const{
@@ -118,10 +96,15 @@ void ProcessCommand::displayLog(const std::string& log){
 	curr_time = time(NULL);
 
 	tm *tm_local = localtime(&curr_time);
-    PostMessage(hwndMain, WM_APP, 0, (LPARAM)new std::string("[" + std::to_string(tm_local->tm_hour) + ":" + std::to_string(tm_local->tm_min) + ":" + std::to_string(tm_local->tm_sec) + "]" + log));
+    LPARAM msg = (LPARAM)new std::string(
+        "[" + std::to_string(tm_local->tm_hour) + ":" 
+            + std::to_string(tm_local->tm_min) + ":" 
+            + std::to_string(tm_local->tm_sec) + "] " 
+            + log);
+
+    PostMessage(hwndMain, WM_APP, 0, msg);
 }
 
-//! Remember to delete couts
 void ProcessCommand::executeCommand(Client& client) {
     if (message.isEmpty()) return;
 
@@ -134,10 +117,8 @@ void ProcessCommand::executeCommand(Client& client) {
         error_response = "You have entered the wrong command.\n";
         error_response += "Please try again, or send command \"help\" to get the list of available commands.";
         sendResponse(error_response);
-        displayLog(error_response);
+        displayLog("Received wrong command");
         message.clear();
-        std::cerr << "Wrong command" << std::endl;
-
         return;
     }
 
@@ -160,17 +141,15 @@ void ProcessCommand::executeCommand(Client& client) {
         error_response += "Please try again, or send command \"getips\" to get the list of available computers.";
         sendResponse(error_response);
         message.clear();
-        std::cerr << "Invalid socket for IP: " << ip << std::endl;
-        response = R"({"status": )" + std::to_string(1) + R"(, "file": ")" + "" + R"(", "message": ")" + "Invalid socket for IP: " + ip + R"("})";
+        displayLog("Invalid IP: " + ip);
     }
     else{
         commands[command]->setCommandInfo(ip, command, param);
         commands[command]->execute(client);
         response = commands[command]->getResponse();
-        
+        processResponse();
     }
 
-    processResponse();
     message.clear();
 }
 
@@ -181,8 +160,10 @@ bool ProcessCommand::getLatestMessage() {
         gmailapi.markAsRead(message.getGmailID());
     }
     catch (std::runtime_error& re) {
-        std::cerr << re.what() << std::endl;
+        displayLog(re.what());
+        return false;
     }
+
     return true;
 }
 
@@ -196,7 +177,7 @@ void ProcessCommand::sendResponse(const std::string& response_string, const Atta
     gmailapi.replyMessage(message, response, attachment);
     }
     catch (std::runtime_error& re) {
-        std::cerr << re.what() << std::endl;
+        displayLog(re.what());
     }
 }
 
@@ -205,8 +186,8 @@ void ProcessCommand::processResponse() {
     try {
         j = json::parse(response);
         if (j["status"] == -1) {
-            displayLog("An error has occur when executing the command\n");
-            sendResponse("An error has occur when executing the command");
+            sendResponse("An error has occur when executing the command.");
+            displayLog("An error has occur when executing the command.\n");
             return;
         }
         if (j["status"] == SUCCESS && j["file"] != "")
@@ -215,12 +196,10 @@ void ProcessCommand::processResponse() {
             sendResponse(j["message"]);
 
         std::string res = j["message"];
-        res += '\n';
-        displayLog(res);
-
+        displayLog('[' + getIP() + "] " + res + '\n');
     }
     catch (std::exception& e) {
         sendResponse("An error has occur when processing server response.");
-        displayLog("An error has occur when executing the command\n");
+        displayLog("An error has occur when processing server response.\n");
     }
 }

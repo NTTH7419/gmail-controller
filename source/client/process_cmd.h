@@ -12,7 +12,6 @@ class ProcessCommand {
 
         void updateSenderQuery();
         std::string getCommand() const;
-        bool isValidIP(const std::string &ip) const;
         std::string getIP() const;
         std::string getParameter() const;
         void sendResponse(const std::string& response_string, const Attachment& attachment = {});

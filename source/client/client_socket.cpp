@@ -9,7 +9,13 @@ void Client::displayLog(const std::string& log){
 	curr_time = time(NULL);
 
 	tm *tm_local = localtime(&curr_time);
-    PostMessage(hwndMain, WM_APP, 0, (LPARAM)new std::string("[" + std::to_string(tm_local->tm_hour) + ":" + std::to_string(tm_local->tm_min) + ":" + std::to_string(tm_local->tm_sec) + "]" + log));
+    LPARAM msg = (LPARAM)new std::string(
+        "[" + std::to_string(tm_local->tm_hour) + ":" 
+            + std::to_string(tm_local->tm_min) + ":" 
+            + std::to_string(tm_local->tm_sec) + "] " 
+            + log);
+
+    PostMessage(hwndMain, WM_APP, 0, msg);
 }
 
 void Client::initialize(){
@@ -126,8 +132,8 @@ bool Client::connectToServer(const char* address){
         std::cout << "Unable to connect to server!" << std::endl;
         return false;
     }
-    std::cout << "Connected to " << address << std::endl;
-    displayLog("Connected to" + std::string(address) + "\n");
+    std::cout << "Connected to IP " << address << std::endl;
+    displayLog("Connected to IP " + std::string(address) + "\n");
 
     freeaddrinfo(result);
     return true;
