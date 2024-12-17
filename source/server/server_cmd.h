@@ -109,6 +109,8 @@ class RestartCommand : public Command{
 };
 
 class ScreenshotCommand : public Command{
+    private:
+        int GetEncoderClsid(const wchar_t* format, CLSID* pClsid);
     public:
         void execute(Server& server, const std::string& param) override;
 };

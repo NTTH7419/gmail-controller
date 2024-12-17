@@ -202,33 +202,30 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam){
 
     DWORD processID;
     TCHAR windowTitle[MAX_PATH];
-    TCHAR processName[MAX_PATH] = TEXT("<unknown>"); // Default value if process name cannot be retrieved
+    TCHAR processName[MAX_PATH] = TEXT("<Unknown>"); // Default value if process name cannot be retrieved
 
-    // Check if the window is visible and has a title
+
     if (IsWindowVisible(hwnd) && GetWindowText(hwnd, windowTitle, MAX_PATH) && _tcslen(windowTitle) > 0) {
-        // Get the process ID associated with this window
+
         GetWindowThreadProcessId(hwnd, &processID);
 
-        // Open the process to retrieve the executable name
         HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
         if (hProcess) {
             HMODULE hMod;
             DWORD cbNeeded;
-            
-            // Attempt to retrieve the executable name associated with the process.
+
             if (EnumProcessModules(hProcess, &hMod, sizeof(hMod), &cbNeeded)) {
-                // Retrieve the base name of the module, which is the process name
                 GetModuleBaseName(hProcess, hMod, processName, sizeof(processName) / sizeof(TCHAR));
             }
             CloseHandle(hProcess);
         }
 
-        // Write the window title and process name to the file
         *outFile << "Application: " << processName 
-                 << " (Window Title: " << windowTitle 
-                 << ") (PID: " << processID << ")\n";
+                 << "\nWindow Title: " << windowTitle 
+                 << "\nPID: " << processID
+                 << "\n---------";
     }
-    return TRUE; // Continue enumeration
+    return TRUE;
 }
 
 void ListAppCommand::execute(Server& server, const std::string& param){
@@ -266,50 +263,146 @@ void ListAppCommand::execute(Server& server, const std::string& param){
     server.echo(createResponse());
 }
 
-void StartAppCommand::execute(Server& server, const std::string& param){
-    std::string app_name = param;
-    HINSTANCE hInstance = ShellExecute(NULL, "open", app_name.c_str(), NULL, NULL, SW_SHOWNORMAL);
-    if (hInstance != NULL) {
-        std::cout << "Started application: " << app_name << std::endl;
-        status = 0;
-        message = "Application \\\"" + toRawString(app_name) + "\\\" started successfully.";
-    } else {
-        std::cerr << "Failed to start application: " << app_name << " (Error: " << GetLastError() << ")\n";
-        status = 1;
-        message = "Start app error: Failed to start application \\\"" + toRawString(app_name) + "\\\".";
+std::string RunPowerShellCommand(const std::wstring& command) {
+    HANDLE hReadPipe, hWritePipe;
+    SECURITY_ATTRIBUTES sa = {sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE};
+
+    if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0)) {
+        return "-error";
     }
+
+    SetHandleInformation(hReadPipe, HANDLE_FLAG_INHERIT, 0);
+
+    std::wstring powershellCommand = L"powershell.exe -NoProfile -Command \"" + command + L"\"";
+
+    STARTUPINFOW si = { 0 };
+    PROCESS_INFORMATION pi = { 0 };
+
+    si.cb = sizeof(STARTUPINFOW);
+    si.hStdOutput = hWritePipe;
+    si.hStdError = hWritePipe;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+
+    // Create the PowerShell process
+    if (!CreateProcessW(
+            nullptr,
+            &powershellCommand[0],
+            nullptr,
+            nullptr,
+            TRUE,
+            0,
+            nullptr,
+            nullptr,
+            &si,
+            &pi)) {
+        CloseHandle(hWritePipe);
+        CloseHandle(hReadPipe);
+        return "-error";
+    }
+
+    CloseHandle(hWritePipe);
+
+    char buffer[4096];
+    DWORD bytesRead;
+    std::string result;
+
+    while (ReadFile(hReadPipe, buffer, sizeof(buffer) - 1, &bytesRead, nullptr) && bytesRead > 0) {
+        buffer[bytesRead] = '\0';
+        result += buffer;
+    }
+
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(hReadPipe);
+
+    return result;
+}
+
+void StartAppCommand::execute(Server& server, const std::string& param){
+    std::wstring app_name = std::wstring(param.begin(), param.end());
+
+    // check if the app exist
+    std::wstring command = L"Get-StartApps | Where-Object {$_.Name -eq \\\"" + app_name + L"\\\"} | Select-Object -ExpandProperty Name";
+    std::string output = RunPowerShellCommand(command);
+    std::cout << output << '\n';
+    if (output == "-error") {
+        status = FAILURE;
+        message = "Start app error: Fail to run the command.";
+        server.echo(createResponse());
+        return;
+    }
+    if (output != param + "\r\n") { // the output is the program name
+        status = FAILURE;
+        message = "Start app error: No application with the name \\\"" + param + "\\\" found.";
+        server.echo(createResponse());
+        return;
+    }
+
+    // run that app
+    command = L"$app = Get-StartApps | Where-Object {$_.Name -eq \\\"" + app_name + L"\\\"}; Start-Process \\\"shell:AppsFolder\\$($app.AppID)\\\"";
+    output = RunPowerShellCommand(command);
+    std::cout << output << '\n';
+    if (output == "-error") {
+        status = FAILURE;
+        message = "Start app error: Fail to run the command.";
+    }
+    else if (!output.empty()) { // it will return error if the application is not found
+        status = FAILURE;
+        message = "Start app error: No application with the name \\\"" + param + "\\\" found.";
+    }
+    else {
+        status = SUCCESS;
+        message = "App \\\"" + param + "\\\" started successfully.";
+    }
+
     server.echo(createResponse());
 }
 
 void StopAppCommand::execute(Server& server, const std::string& param){
-    DWORD processID = stoi(param);
-    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, processID);
-    if (hProcess) {
-        if (TerminateProcess(hProcess, 0)) {
-            std::cout << "Terminated process with PID: " << processID << "\n";
-            CloseHandle(hProcess);
-            status = SUCCESS;
-            message = "Application with PID " + param + " stopped successfully.";
-            server.echo(createResponse());
-            return;
-        } else {
-            std::cerr << "Failed to terminate process with PID: " << processID << " (Error: " << GetLastError() << ")\n";
-            CloseHandle(hProcess);
-            status = ERROR;
-            message = "Stop app error: Failed to stop application with PID " + param + '.'; 
-            server.echo(createResponse());
-            return;
-        }
-    } else {
-        std::cerr << "Unable to open process with PID: " << processID << " (Error: " << GetLastError() << ")\n";
-        status = ERROR;
-        message = "Stop app error: Failed to stop application with PID " + param + '.'; 
+    std::wstring app_id = std::wstring(param.begin(), param.end());
+
+    // get app name
+    std::wstring command = L"Get-Process | Where-Object {$_.Id -eq " + app_id + L"} | Select-Object -ExpandProperty Name ";
+    std::string output = RunPowerShellCommand(command);
+    if (output == "-error") {
+        status = FAILURE;
+        message = "Stop app error: Fail to run the command.";
         server.echo(createResponse());
         return;
     }
+    if (output.empty()) {
+        status = FAILURE;
+        message = "Stop app error: No Application with PID " + param + " running.\\n"
+                  "Use \\\"listapp\\\" command to get the list of running aplications.";
+        server.echo(createResponse());
+        return;
+    }
+    std::string app_name = output.substr(0, output.find('\r'));
+
+    // stop app
+    command = L"Stop-Process -Name " + std::wstring(app_name.begin(), app_name.end()) + L" -Force";
+    output = RunPowerShellCommand(command);
+    std::cout << output << '\n';
+    if (output == "-error") {
+        status = FAILURE;
+        message = "Stop app error: Fail to run the command.";
+    }
+    else if (!output.empty()) {
+        status = FAILURE;
+        message = "Stop app error: No Application with PID " + param + " running.\\n"
+                  "Use \\\"listapp\\\" command to get the list of running aplications.";
+    }
+    else {
+        status = SUCCESS;
+        message = "Application \\\"" + app_name + "\\\" (PID: " + param + ") has been stopped successfully.";
+    }
+
+    server.echo(createResponse());
 }
 
-int GetEncoderClsid(const wchar_t* format, CLSID* pClsid) {
+int ScreenshotCommand::GetEncoderClsid(const wchar_t* format, CLSID* pClsid) {
     UINT num = 0;
     UINT size = 0;
     Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
@@ -925,7 +1018,7 @@ void StopKeylogCommand::execute(Server& server, const std::string& param) {
         status = sendFile(server, kl->getOutputFile());
         if (status == SUCCESS) {
             file_name = kl->getOutputFile();
-            if (file_name.rfind('\\') != string::npos) {
+            if (file_name.rfind('\\') != std::string::npos) {
                 file_name = file_name.substr(file_name.rfind('\\') + 1);
             }
             message = "Send keylog file successfully.";
@@ -963,7 +1056,7 @@ void StopRecordCommand::execute(Server& server, const std::string& param){
 
     if (status == SUCCESS){
         server.echo("RUNNING");
-        string outfile = "video.mp4";
+        std::string outfile = "video.mp4";
         status = sendFile(server, directory + outfile);
         if (status == SUCCESS){
             file_name = outfile;
