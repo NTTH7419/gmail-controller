@@ -13,7 +13,7 @@ void Client::displayLog(const std::string& log){
         "[" + std::to_string(tm_local->tm_hour) + ":" 
             + std::to_string(tm_local->tm_min) + ":" 
             + std::to_string(tm_local->tm_sec) + "] " 
-            + log);
+            + log + '\n');
 
     PostMessage(hwndMain, WM_APP, 0, msg);
 }
@@ -22,7 +22,7 @@ void Client::initialize(){
     int error = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (error != 0) {
         // std::cout << "WSAStartup failed with error: " << error << std::endl;
-        displayLog("WSAStartup failed with error: " + error + '\n');
+        displayLog("WSAStartup failed with error: " + std::to_string(error) + ".");
         return;
     }
     std::cout << "WSAStartup succeeded" << std::endl;
@@ -50,7 +50,7 @@ void Client::sendDiscovery(){
     // bind(udp_discovery, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     // Broadcast the discovery message
     std::cout << "Scanning for available computer servers..." << std::endl;
-    displayLog("Scanning for available computer servers...\n");
+    displayLog("Scanning for available computer servers...");
     sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     int bytes_received;  
     
@@ -133,7 +133,7 @@ bool Client::connectToServer(const char* address){
         return false;
     }
     std::cout << "Connected to IP " << address << std::endl;
-    displayLog("Connected to IP " + std::string(address) + "\n");
+    displayLog("Connected to IP " + std::string(address) + ".");
 
     freeaddrinfo(result);
     return true;

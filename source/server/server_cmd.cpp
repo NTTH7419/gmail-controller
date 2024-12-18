@@ -28,7 +28,7 @@ std::string Command::createResponse() {
 ReceiveCommand::ReceiveCommand() : command(), parameter() {
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"restart", new RestartCommand},
-                     {"listapp", new ListAppCommand},
+                     {"listapps", new ListAppCommand},
                      {"startapp", new StartAppCommand},
                      {"stopapp", new StopAppCommand},
                      {"listser", new ListSerCommand},
@@ -223,7 +223,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam){
         *outFile << "Application: " << processName 
                  << "\nWindow Title: " << windowTitle 
                  << "\nPID: " << processID
-                 << "\n---------";
+                 << "\n---------\n";
     }
     return TRUE;
 }

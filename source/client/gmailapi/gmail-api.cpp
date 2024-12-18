@@ -206,8 +206,10 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     headers = curl_slist_append(headers, ("Content-Length: " + std::to_string(message_length)).c_str());
 
     response = makeRequest(session_uri, headers, text_message, "PUT");
-    if (response.getStatus() != 200) {
-        throw std::runtime_error("Cannot send message");
+    int code = response.getStatus();
+    if (code != 200 && code != 100) {   // 200: OK, 100: Continue
+        std::cout << response.getStatus() << '\n';
+        throw std::runtime_error("Cannot send message.S");
     }
 
 }
@@ -227,6 +229,7 @@ void GmailAPI::sendMessageWithoutAttachment(const Message& message) {
 
     HTTPResponse response = makeRequest(url, headers, post_fields, "POST");
     if (response.getStatus() != 200) {
+        std::cout << response.getStatus() << '\n';
         throw std::runtime_error("Cannot send message");
     }
 }

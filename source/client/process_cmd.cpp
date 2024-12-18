@@ -7,7 +7,7 @@ ProcessCommand::ProcessCommand(HWND& hwndMain) : message(), response(), hwndMain
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"getips", new GetIPsCommand},
                      {"restart", new RestartCommand},
-                     {"listapp", new ListAppCommand},
+                     {"listapps", new ListAppCommand},
                      {"startapp", new StartAppCommand},
                      {"stopapp", new StopAppCommand},
                      {"listser", new ListSerCommand},
@@ -100,7 +100,7 @@ void ProcessCommand::displayLog(const std::string& log){
         "[" + std::to_string(tm_local->tm_hour) + ":" 
             + std::to_string(tm_local->tm_min) + ":" 
             + std::to_string(tm_local->tm_sec) + "] " 
-            + log);
+            + log + '\n');
 
     PostMessage(hwndMain, WM_APP, 0, msg);
 }
@@ -114,10 +114,10 @@ void ProcessCommand::executeCommand(Client& client) {
     // check command
     if (command == "invalid") {
         std::string error_response;
-        error_response = "You have entered the wrong command.\n";
+        error_response = "You have entered the wrong command.";
         error_response += "Please try again, or send command \"help\" to get the list of available commands.";
         sendResponse(error_response);
-        displayLog("Received wrong command");
+        displayLog("Received wrong command.");
         message.clear();
         return;
     }
@@ -126,7 +126,7 @@ void ProcessCommand::executeCommand(Client& client) {
     if (command == "help" || command == "getips") {
         commands[command]->execute(client);
         response = commands[command]->getResponse();
-        displayLog("Command \"" + command + "\" has been executed.\n");
+        displayLog("Command \"" + command + "\" has been executed.");
         processResponse();
         message.clear();
         return;
@@ -137,7 +137,7 @@ void ProcessCommand::executeCommand(Client& client) {
 	SOCKET server_socket = client.getServerSocket(ip);
     if (server_socket == INVALID_SOCKET) {
         std::string error_response;
-        error_response = "You have entered an invalid IP address.\n";
+        error_response = "You have entered an invalid IP address.";
         error_response += "Please try again, or send command \"getips\" to get the list of available computers.";
         sendResponse(error_response);
         message.clear();
@@ -149,6 +149,10 @@ void ProcessCommand::executeCommand(Client& client) {
         response = commands[command]->getResponse();
         processResponse();
     }
+
+
+    json j = json::parse(response);
+    displayLog(j["message"]);
 
     message.clear();
 }
@@ -187,19 +191,15 @@ void ProcessCommand::processResponse() {
         j = json::parse(response);
         if (j["status"] == -1) {
             sendResponse("An error has occur when executing the command.");
-            displayLog("An error has occur when executing the command.\n");
             return;
         }
         if (j["status"] == SUCCESS && j["file"] != "")
             sendResponse(j["message"], Attachment(directory + std::string(j["file"]), j["file"]));
         else
             sendResponse(j["message"]);
-
-        std::string res = j["message"];
-        displayLog('[' + getIP() + "] " + res + '\n');
     }
     catch (std::exception& e) {
         sendResponse("An error has occur when processing server response.");
-        displayLog("An error has occur when processing server response.\n");
+        displayLog("An error has occur when processing server response.");
     }
 }

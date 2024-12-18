@@ -77,7 +77,7 @@ int WebcamController::takePhoto(std::string& message){
     std::ostringstream cmd;
     cmd << "\"ffmpeg.exe\" "
             << "-f dshow -i video=\"" << webcamName << "\" "
-            << "-vframes 1 -rtbufsize 100M -y -update 1 "
+            << "-loglevel quiet -vframes 1 -rtbufsize 100M -y -update 1 "
             << directory + "snapshot.png";
 
     // Initialize STARTUPINFO and PROCESS_INFORMATION structs
@@ -154,10 +154,10 @@ int WebcamController::StartRecord(std::string& message){
     si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
     std::ostringstream command;
-    command << "\"ffmpeg.exe\" -hide_banner -loglevel quiet " //replace with your ffmpeg bin path
+    command << "\"ffmpeg.exe\" -hide_banner -loglevel quiet "
             << "-f dshow -i video=\"" << webcamName << "\" "
-            << "-c:v libx264 -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y "
-            << "\"" + directory + "video.mp4\""; //replace with your path that you want to save as
+            << "-c:v libx264 -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y -fs 23M"
+            << "\"" + directory + "video.mp4\"";
 
     LPSTR cmdLine = _strdup(command.str().c_str());
 
