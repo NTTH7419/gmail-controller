@@ -28,8 +28,8 @@ ProcessCommand::ProcessCommand(HWND& hwndMain) : message(), response(), hwndMain
     try {
         gmailapi.initOAuth();
     }
-    catch (std::runtime_error& re) {
-        std::cerr << re.what() << std::endl;
+    catch (GmailError& ge) {
+        displayLog(ge.what());
     }
 }
 
@@ -163,8 +163,8 @@ bool ProcessCommand::getLatestMessage() {
         if (message.isEmpty()) return false;
         gmailapi.markAsRead(message.getGmailID());
     }
-    catch (std::runtime_error& re) {
-        displayLog(re.what());
+    catch (GmailError& ge) {
+        displayLog(ge.what());
         return false;
     }
 
@@ -180,8 +180,13 @@ void ProcessCommand::sendResponse(const std::string& response_string, const Atta
     try {
     gmailapi.replyMessage(message, response, attachment);
     }
-    catch (std::runtime_error& re) {
-        displayLog(re.what());
+    catch (GmailError& ge) {
+        displayLog(ge.what());
+        if (ge.getCode() == ErrorCode::ATTACHMENT_TOO_LARGE) {
+            response.setBody("Attachment is too large to send.");
+            gmailapi.replyMessage(message, response);
+            return;
+        }
     }
 }
 

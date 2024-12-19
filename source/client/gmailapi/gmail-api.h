@@ -1,6 +1,7 @@
 #pragma once
 
 #include <exception>
+#include <unordered_map>
 #include "base64.h"
 #include "tool.h"
 #include "OAuth2.h"
@@ -82,4 +83,42 @@ class GmailAPI {
 		void markAsRead(const std::string& message_id);
 		Message getLatestMessage(const std::string& query = "");
 		void replyMessage(const Message& message, Message& reply_content, const Attachment& attachment = {});
+};
+
+
+enum ErrorCode {
+	OK,
+	ATTACHMENT_TOO_LARGE,
+	CANNOT_SEND_MESSAGE,
+	CANNOT_RETRIEVE_MESSAGE,
+	CANNOT_RETRIEVE_MESSAGE_ID,
+	CANNOT_INIT_UPLOAD,
+	CANNOT_MARK_AS_READ,
+	OAUTH_NOT_READY
+};
+
+std::unordered_map<ErrorCode, std::string> error_messages = {
+	{ATTACHMENT_TOO_LARGE, "Attachment too large, limit is 25MB"},
+	{CANNOT_SEND_MESSAGE, "Cannot send message"},
+	{CANNOT_RETRIEVE_MESSAGE, "Cannot retrieve message"},
+	{CANNOT_RETRIEVE_MESSAGE_ID, "Cannot retrieve message id"},
+	{CANNOT_INIT_UPLOAD, "Cannot initialize upload"},
+	{CANNOT_MARK_AS_READ, "Cannot mark message as read"},
+	{OAUTH_NOT_READY, "OAuth not ready"}
+};
+
+class GmailError: public std::exception {
+	private:
+		std::string message;
+		ErrorCode code;
+		
+	public:
+		GmailError(ErrorCode code) : code(code), message(error_messages[code]) {}
+		GmailError(ErrorCode code, const std::string& message) : code(code), message(message) {}
+		const char* what() const noexcept override {
+			return message.c_str();
+		}
+		ErrorCode getCode() const noexcept {
+			return code;
+		}
 };

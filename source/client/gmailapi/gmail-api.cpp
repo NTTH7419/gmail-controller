@@ -174,7 +174,7 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     int message_length = text_message.length();
 
     if (message_length > 25 * 1024 * 1024) {// 25 MB
-        throw std::runtime_error("Attachment too large, limit is 25MB");
+        throw GmailError(ErrorCode::ATTACHMENT_TOO_LARGE);
     }
 
     std::string token = oauth.getAccessToken();
@@ -191,12 +191,12 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     HTTPResponse response = makeRequest(url, headers, "", "POST");
     json j = response.body;
     if (j.contains("error")) {
-        throw std::runtime_error(j["error"]["errors"]["message"]);
+        throw GmailError(ErrorCode::OAUTH_NOT_READY, j["error"]["errors"]["message"]);
     }
 
     std::string session_uri = response.getHeader("Location");
     if (session_uri.empty()) {
-        throw std::runtime_error("Cannot init uploading");
+        throw GmailError(ErrorCode::CANNOT_INIT_UPLOAD);
     }
 
     // uploading
@@ -206,10 +206,10 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     headers = curl_slist_append(headers, ("Content-Length: " + std::to_string(message_length)).c_str());
 
     response = makeRequest(session_uri, headers, text_message, "PUT");
+
     int code = response.getStatus();
     if (code != 200 && code != 100) {   // 200: OK, 100: Continue
-        std::cout << response.getStatus() << '\n';
-        throw std::runtime_error("Cannot send message.S");
+        throw GmailError(ErrorCode::CANNOT_SEND_MESSAGE);
     }
 
 }
@@ -229,12 +229,15 @@ void GmailAPI::sendMessageWithoutAttachment(const Message& message) {
 
     HTTPResponse response = makeRequest(url, headers, post_fields, "POST");
     if (response.getStatus() != 200) {
-        std::cout << response.getStatus() << '\n';
-        throw std::runtime_error("Cannot send message");
+        throw GmailError(ErrorCode::CANNOT_SEND_MESSAGE);
     }
 }
 
 void GmailAPI::sendMessage(const Message& message, const Attachment& attachment) {
+    if (!oauth.good()) {
+        throw GmailError(ErrorCode::OAUTH_NOT_READY, oauth.getErrorMessage());
+    }
+
     if (attachment.exist()) {
         sendMessageWithAttachment(message, attachment);
     }
@@ -243,7 +246,7 @@ void GmailAPI::sendMessage(const Message& message, const Attachment& attachment)
     }
 }
 
-std::string GmailAPI::getLatestMessageID(const std::string& query) {
+std::string GmailAPI::getLatestMessageID(const std::string& query) {   
     std::string token = oauth.getAccessToken();
 
     curl_slist *headers = NULL;
@@ -255,7 +258,7 @@ std::string GmailAPI::getLatestMessageID(const std::string& query) {
 
     HTTPResponse response = makeRequest(url, headers, "", "GET");
     if (response.getStatus() != 200) {
-        throw std::runtime_error("Cannot retrieve message id.");
+        throw GmailError(ErrorCode::CANNOT_RETRIEVE_MESSAGE_ID);
     }
 
     json j = json::parse(response.body);
@@ -264,6 +267,10 @@ std::string GmailAPI::getLatestMessageID(const std::string& query) {
 }
 
 void GmailAPI::markAsRead(const std::string& message_id) {
+    if (!oauth.good()) {
+        throw GmailError(ErrorCode::OAUTH_NOT_READY, oauth.getErrorMessage());
+    }
+
     if(message_id.empty()) return;
     
     std::string token = oauth.getAccessToken();
@@ -278,11 +285,15 @@ void GmailAPI::markAsRead(const std::string& message_id) {
 
     HTTPResponse response = makeRequest(url, headers, post_fields, "POST");
     if (response.getStatus() != 200) {
-        throw std::runtime_error("Cannot mark message as read.");
+        throw GmailError(ErrorCode::CANNOT_MARK_AS_READ);
     }
 }
 
 Message GmailAPI::getLatestMessage(const std::string& query) {
+    if (!oauth.good()) {
+        throw GmailError(ErrorCode::OAUTH_NOT_READY, oauth.getErrorMessage());
+    }
+
     std::string token = oauth.getAccessToken();
 
     Message message;
@@ -300,8 +311,10 @@ Message GmailAPI::getLatestMessage(const std::string& query) {
 
     HTTPResponse response = makeRequest(url, headers, "", "GET");
     if (response.getStatus() != 200) {
-        throw std::runtime_error("Cannot retrive message.");
+        throw GmailError(ErrorCode::CANNOT_RETRIEVE_MESSAGE);
     }
+    
+    markAsRead(id);
 
     try {
         json j = json::parse(response.body);
@@ -324,7 +337,7 @@ Message GmailAPI::getLatestMessage(const std::string& query) {
         message.setBody(trim(base64_decode(j["payload"]["parts"][0]["body"]["data"])));
     }
     catch (...) {
-        throw std::runtime_error("Cannot retrieve message.");
+        throw GmailError(ErrorCode::CANNOT_RETRIEVE_MESSAGE);
     }
 
     return message;
@@ -342,6 +355,6 @@ GmailAPI::GmailAPI() : oauth() {}
 void GmailAPI::initOAuth() {
     oauth.init();
     if (!oauth.good()) {
-        throw std::runtime_error(oauth.getErrorMessage());
+        throw GmailError(ErrorCode::OAUTH_NOT_READY, oauth.getErrorMessage());
     }
 }

@@ -143,7 +143,7 @@ void OAuth::init() {
         credential.redirect_uri = j["installed"]["redirect_uris"][0];
     }
     catch(...) {
-        error_message = "\"client_secret.json\" is not found or has wrong format";
+        error_message = "\"client_secret.json\" content is not found or has wrong format.";
         is_error = true;
     }
 
