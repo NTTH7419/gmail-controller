@@ -21,11 +21,9 @@ void Client::displayLog(const std::string& log){
 void Client::initialize(){
     int error = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (error != 0) {
-        // std::cout << "WSAStartup failed with error: " << error << std::endl;
         displayLog("WSAStartup failed with error: " + std::to_string(error) + ".");
         return;
     }
-    std::cout << "WSAStartup succeeded" << std::endl;
 
     ZeroMemory( &hints, sizeof(hints) );
     hints.ai_family = AF_INET;
@@ -47,9 +45,6 @@ void Client::sendDiscovery(){
 
     std::string message = "DISCOVER_SERVER";
 
-    // bind(udp_discovery, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
-    // Broadcast the discovery message
-    std::cout << "Scanning for available computer servers..." << std::endl;
     displayLog("Scanning for available computer servers...");
     sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     int bytes_received;  
@@ -64,7 +59,6 @@ void Client::sendDiscovery(){
         bytes_received = recvfrom(udp_discovery, buffer, buffer_len, 0, (sockaddr*)&serverAddr, &serverAddrLen);
         if (bytes_received > 0) {
             buffer[bytes_received] = '\0';
-            std::cout << "Computer: " << buffer << std::endl;
             std::string ip = std::string(buffer);
             ip = ip.substr(ip.find(": ") + 2);
             if (connectToServer(ip.c_str()) == true){
@@ -75,7 +69,8 @@ void Client::sendDiscovery(){
         } 
         else{
             if (WSAGetLastError() == WSAETIMEDOUT) {
-                std::cout << "Timeout reached. No more responses." << std::endl;
+                // std::cout << "Timeout reached. No more responses." << std::endl;
+                displayLog("Timeout reached. No more responses.");
                 break;
             }
         }
@@ -103,7 +98,7 @@ std::vector<std::string> Client::getIPList(){
 bool Client::connectToServer(const char* address){
     int error = getaddrinfo(address, DEFAULT_PORT, &hints, &result);
     if (error != 0 ) {
-        std::cout << "getaddrinfo failed with error: " << error;
+        displayLog("getaddrinfo failed with error" + std::to_string(error) + ".");
         return false;
     }
     
@@ -115,7 +110,7 @@ bool Client::connectToServer(const char* address){
             ptr->ai_protocol));
 
         if (server_sockets[std::string(address)] == INVALID_SOCKET) {
-            std::cout << "socket failed with error: " << WSAGetLastError();
+            displayLog("socket failed with error: " +  std::to_string(WSAGetLastError()));
             return false;
         }
         error = connect(server_sockets[std::string(address)], ptr->ai_addr, (int)ptr->ai_addrlen);
@@ -129,11 +124,10 @@ bool Client::connectToServer(const char* address){
     }
 
     if (server_sockets[std::string(address)] == INVALID_SOCKET) {
-        std::cout << "Unable to connect to server!" << std::endl;
+        displayLog("Unable to connect to server(s).");
         return false;
     }
-    std::cout << "Connected to IP " << address << std::endl;
-    displayLog("Connected to IP " + std::string(address) + ".");
+    displayLog("Connected to computer with IP: " + std::string(address) + ".");
 
     freeaddrinfo(result);
     return true;
@@ -148,7 +142,7 @@ std::string Client::receiveResponse(std::string ip){
     }
 
     std::string response(buffer);
-    std::cout << "message: " << response << " received" << std::endl;
+    // std::cout << "message: " << response << " received" << std::endl;
 
     return response;
 }
@@ -181,14 +175,13 @@ int receiveFile(Client& client, const std::string& ip, const std::string& direct
     buffer[byte_received] = '\0';
 
     if (strcmp(buffer, "error") == 0){
-        std::cout << "Error: File could not be sent" << std::endl;
+        client.displayLog(ip + ": Error, File could not be sent");
         return 1;
     }
 
     char* sep = strchr(buffer, '|');
     std::string file_name = std::string(buffer).substr(0, sep - buffer);
     int file_size = stoi(std::string(buffer).substr(sep - buffer + 1));
-    std::cout << "ready to receive file" << std::endl;
     int count = 0;
 
     std::ofstream file("temp\\" + file_name, std::ios::binary);
@@ -209,6 +202,7 @@ int receiveFile(Client& client, const std::string& ip, const std::string& direct
     while(count < file_size);
 
     file.close();
-    std::cout << "file received" << std::endl;
+    // std::cout << "file received" << std::endl;
+
     return 0;
 }

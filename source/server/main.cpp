@@ -1,6 +1,7 @@
 #include "server_cmd.h"
 
 int __cdecl main(void) {
+	FreeConsole();
     Server server;
 	ReceiveCommand rc;
     server.initialize();
