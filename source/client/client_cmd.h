@@ -39,7 +39,6 @@ public:
     void setCommandInfo(const std::string& ip, const std::string& command, const std::string& parameter);
     virtual bool validateParameter() const;
     bool sendCommand(Client& Client);
-    // bool preprocessCommand(Client& client);
     std::string getResponse();
 };
 
@@ -48,11 +47,14 @@ public:
     void execute(Client& client) override;
 };
 
+class RestartCommand : public Command{
+public: 
+    void execute(Client& client) override;
+};
+
 class ListFileCommand : public Command{
 private:
     std::vector<std::string> listFile(const std::string& path);
-    
-
 public:
     void execute(Client& client) override;
     bool validateParameter() const override;
@@ -73,7 +75,6 @@ public:
 class ListAppCommand : public Command{
 public:
     void execute(Client& client) override;
-    bool validateParameter() const override;
 };
 
 class StartAppCommand : public Command{
@@ -83,12 +84,6 @@ public:
 };
 
 class StopAppCommand : public Command{
-public: 
-    void execute(Client& client) override;
-    bool validateParameter() const override;
-};
-
-class RestartCommand : public Command{
 public: 
     void execute(Client& client) override;
     bool validateParameter() const override;

@@ -18,70 +18,55 @@ bool Command::sendCommand(Client& client){
     std::string send_string = command + '-' + parameter;
 
     if (send(server_socket, send_string.c_str(), send_string.length(), 0) == SOCKET_ERROR){
-        std::cerr << "Error: the server on the " << ip << " is no longer available" << std::endl;
+        json j;
+        j["status"] = FAILURE;
+        j["message"] = "An error occured while sending the command to server.\nThe server may be down.";
+        j["file"] = "";
+        response = j.dump();
         return 0;
     }
-    
-    std::cout << "command sent: " << send_string << std::endl; 
-    
     return 1;
 }  
 
 std::string Command::getResponse(){
     std::string temp = response;
-    response = "";
+    response.clear();
     return temp;
 }
 
 //*Shutdown Command
 void ShutdownCommand::execute(Client& client){
-    if (!sendCommand(client)){
-        //* response
-    }
-    else{
-        std::cout << "shutting down server from client..." << std::endl;
+    if (sendCommand(client)){
         response = client.receiveResponse(ip);
     }
-    std::cout << response << std::endl;
 }
 
 
 void RestartCommand::execute(Client& client){
-    if (!sendCommand(client)){
-        //* response
-    }
-    else{
-        std::cout << "restarting server..." << std::endl;
+    if (sendCommand(client)){
         response = client.receiveResponse(ip);
     }
-    std::cout << response << std::endl;
-}
-
-bool RestartCommand::validateParameter() const {
-    return true;
 }
 
 //*Get File Command
 void GetFileCommand::execute(Client& client){
     if (!validateParameter()){
-        std::cout << "Invalid parameter" << std::endl;
-        //* response
+        json j;
+        j["status"] = FAILURE;
+        j["message"] = "Invalid file path, please try again.";
+        j["file"] = "";
+        response = j.dump();
         return;
     }
         
-    if (!sendCommand(client)){
-        //* response
-    }
-    else{
+    if (sendCommand(client)){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
-        
-    std::cout << response << std::endl;
 }
 
 bool GetFileCommand::validateParameter() const {
-    if (parameter.find("C:\\") == 0 && parameter.find('/') == std::string::npos)
+    if (parameter.find(":\\") == 1 && parameter.find('/') == std::string::npos)
         return true;
     return false;
 }
@@ -89,23 +74,21 @@ bool GetFileCommand::validateParameter() const {
 //*Delete File Command
 void DeleteFileCommand::execute(Client& client){
     if (!validateParameter()){
-        std::cout << "Invalid parameter" << std::endl;
-        //* response
+        json j;
+        j["status"] = FAILURE;
+        j["message"] = "Invalid file path, please try again.";
+        j["file"] = "";
+        response = j.dump();
         return;
     }
         
-    if (!sendCommand(client)){
-        //* response
-    }
-    else{
+    if (sendCommand(client)){
         response = client.receiveResponse(ip);
     }
-        
-    std::cout << response << std::endl;
 }
 
 bool DeleteFileCommand::validateParameter() const {
-    if (parameter.find("C:\\") == 0 && parameter.find('/') == std::string::npos)
+    if (parameter.find(":\\") == 1 && parameter.find('/') == std::string::npos)
         return true;
     return false;
 }
@@ -113,117 +96,93 @@ bool DeleteFileCommand::validateParameter() const {
 //* List File Command
 void ListFileCommand::execute(Client& client){
     if (!validateParameter()){
-        std::cout << "Invalid parameter" << std::endl;
-        //* response
+        json j;
+        j["status"] = FAILURE;
+        j["message"] = "Invalid file path, please try again.";
+        j["file"] = "";
+        response = j.dump();
         return;
     }
-
-    if (!sendCommand(client)){
-        //*response
-    }
-    else{
+        
+    if (sendCommand(client)){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
-
-    std::cout << response << std::endl;
 }
 
 bool ListFileCommand::validateParameter() const {
-    if (parameter.find("C:\\") == 0 && parameter.find('/') == std::string::npos)
+    if (parameter.find(":\\") == 1 && parameter.find('/') == std::string::npos)
         return true;
     return false;
 }
 
 void ListAppCommand::execute(Client& client){
-    if (!sendCommand(client)){
-        //* response
-    }
-    else{
+    if (sendCommand(client)){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
-    std::cout << response << std::endl;
-}
-
-bool ListAppCommand::validateParameter() const {
-    return true;
 }
 
 void StartAppCommand::execute(Client& client){
     if (!validateParameter()){
-        std::cout << "Invalid parameter" << std::endl;
-        //* response
+        json j;
+        j["status"] = FAILURE;
+        j["message"] = "Missing application name, please try again.";
+        j["file"] = "";
+        response = j.dump();
         return;
     }
 
-    if (!sendCommand(client)){
-        //*response
-    }
-    else{
-        std::cout << "Starting application..." << std::endl;
+    if (sendCommand(client)){
         response = client.receiveResponse(ip);
-
     }
-
-    std::cout << response << std::endl;
 }
 
 bool StartAppCommand::validateParameter() const {
-    return true;
+    if(!parameter.empty())
+        return true;
+    return false;
 }
 
 void StopAppCommand::execute(Client& client){
     if (!validateParameter()){
-        std::cout << "Invalid parameter" << std::endl;
-        //* response
+        json j;
+        j["status"] = FAILURE;
+        j["message"] = "Missing application ID, please try again.";
+        j["file"] = "";
+        response = j.dump();
         return;
     }
-    
-    if (!sendCommand(client)){
-        //* response
-    }
-    else{
-        std::cout << "Stopping applications..." << std::endl;
-        response = client.receiveResponse(ip);
 
+    if (sendCommand(client)){
+        response = client.receiveResponse(ip);
     }
-    std::cout << response << std::endl;
 }
 
 bool StopAppCommand::validateParameter() const {
-    return true;
+    if(!parameter.empty())
+        return true;
+    return false;
 }
 
 
 void ScreenshotCommand::execute(Client& client){
-    if (!validateParameter()){
-        std::cout << "Invalid parameter" << std::endl;
-        return;
-    }
-
-    if (!sendCommand(client)){
-        //*response
-    }
-
-    else{
+    if (sendCommand(client)){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
-    std::cout << response << std::endl;
 }
 
 void GetIPsCommand::execute(Client& client){
-    int status = SUCCESS;
     std::string message;
-    message = "List of available IPs:\n";
+    message = "List of available IPs:";
 
     for (auto ip : client.getIPList()) {
-        message += ip + "\n";
+        message += "\n- " + ip;
     }
 
     json j;
-    j["status"] = status;
+    j["status"] = SUCCESS;
     j["message"] = message;
     j["file"] = "";
 
@@ -233,39 +192,27 @@ void GetIPsCommand::execute(Client& client){
 
 
 void ListSerCommand::execute(Client& client) {
-    if (!sendCommand(client)){
-        //* response
-    }
-    else{
+    if (sendCommand(client)){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
 }
 
 void TakePhotoCommand::execute(Client& client){
-    if (!sendCommand(client)){
-        //response when error
-
-    }else{
+    if (sendCommand(client)){
         receiveFile(client, ip, directory);
         response = client.receiveResponse(ip);
     }
 }
 
 void StartKeylogCommand::execute(Client& client) {
-    if (!sendCommand(client)) {
-
-    }
-    else {
+    if (sendCommand(client)){
         response = client.receiveResponse(ip);
     }
 }
 
 void StopKeylogCommand::execute(Client& client) {
-    if (!sendCommand(client)) {
-
-    }
-    else {
+    if (sendCommand(client)){
         if (client.receiveResponse(ip) == "RUNNING") {
             receiveFile(client, ip, directory);
         }
@@ -298,7 +245,7 @@ void HelpCommand::execute(Client& client) {
 a/ List Applications
 - Subject: listapps
 - Body: IP (line 1)
-- Return list of applications in .txt
+- Return list of running applications in .txt
 
 b/ Start Application:
 - Subject: startapp
@@ -312,15 +259,15 @@ c/ Stop Application:
 a/ List Services
 - Subject: listsers
 - Body: IP (line 1)
-- Return list of services in .txt
+- Return list of running services in .txt
 
 b/ Start Service:
 - Subject: startser
-- Body: IP (line 1), execution file/service name (line 2)
+- Body: IP (line 1), service name (line 2)
 
 c/ Stop Service:
 - Subject: stopser
-- Body: IP (line 1), execution file/service name (line 2)
+- Body: IP (line 1), service name (line 2)
 
 7/ File:
 a/ List File
@@ -356,7 +303,7 @@ c/ Stop recording video
 - Subject: stoprecord
 - Body: IP (line 1)
 - Return video as attachment
-- Require startrecord to be called before, maximum video length: 120 seconds
+- Require startrecord to be called before, maximum video size: 23MB
 
 10/ Keylogger
 a/ Start recording keystroke
@@ -380,86 +327,57 @@ void StartSerCommand::execute(Client& client){
     if (!validateParameter()){
         json j;
         j["status"] = 1;
-        j["message"] = "Invalid parameter, please try again.";
+        j["message"] = "Missing service name, please try again.";
         j["file"] = "";
 
         response = j.dump();
         return;
     }
 
-    if (!sendCommand(client)){
-        json j;
-        j["status"] = 1;
-        j["message"] = "An error occured while sending the command to server.";
-        j["file"] = "";
-
-        response = j.dump();
-        return;
+    if (sendCommand(client)){
+        response = client.receiveResponse(ip);
     }
+}
 
-    response = client.receiveResponse(ip);
+bool StartSerCommand::validateParameter() const{
+    if(parameter.empty())
+        return false;
+    return true;
 }
 
 void StopSerCommand::execute(Client& client){
     if (!validateParameter()){
         json j;
         j["status"] = FAILURE;
-        j["message"] = "Invalid parameter, please try again.";
+        j["message"] = "Missing service name, please try again.";
         j["file"] = "";
 
         response = j.dump();
         return;
     }
 
-    if (!sendCommand(client)){
-        json j;
-        j["status"] = FAILURE;
-        j["message"] = "An error occured while sending the command to server.";
-        j["file"] = "";
-
-        response = j.dump();
-        return;
+    if (sendCommand(client)){
+        response = client.receiveResponse(ip);
     }
-
-    response = client.receiveResponse(ip);
-}
-
-bool StartSerCommand::validateParameter() const{
-    return true;
 }
 
 bool StopSerCommand::validateParameter() const{
+    if(parameter.empty())
+        return false;
     return true;
 }
 
 void StartRecordCommand::execute(Client& client){
-    if (!sendCommand(client)){
-        json j;
-        j["status"] = FAILURE;
-        j["message"] = "An error occured while sending the command to server.";
-        j["file"] = "";
-        response = j.dump();
-        return;
+    if (sendCommand(client)){
+        response = client.receiveResponse(ip);
     }
-
-    response = client.receiveResponse(ip);
-    
-
 }
 
 void StopRecordCommand::execute(Client& client){
-    if (!sendCommand(client)){
-        json j;
-        j["status"] = FAILURE;
-        j["message"] = "An error occured while sending the command to server.";
-        j["file"] = "";
-        response = j.dump();
-        return;
+    if (sendCommand(client)){
+        if (client.receiveResponse(ip) == "RUNNING"){
+            receiveFile(client, ip, directory);
+        }
+        response = client.receiveResponse(ip);   
     }
-
-    if (client.receiveResponse(ip) == "RUNNING"){
-        receiveFile(client, ip, directory);
-    }
-
-    response = client.receiveResponse(ip);
 }
