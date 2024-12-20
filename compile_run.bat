@@ -2,7 +2,8 @@
 set /p "input=Enter 1: Build client, 2: Build server, 3: Run client, 4: run server: "
 
 if %input% == 1 (
-    g++ -o release/client/client.exe source/client/*.cpp source/client/gmailapi/*.cpp -lpsapi -lws2_32 -lcurl -I./source/client/lib/curl_8.11/include -I./source/client/lib/json/include -L./source/client/lib/curl_8.11/lib
+    cd .\source\client
+    make
     echo completed
     pause
 ) else (

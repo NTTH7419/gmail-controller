@@ -86,6 +86,7 @@ class GmailAPI {
 };
 
 
+
 enum ErrorCode {
 	OK,
 	ATTACHMENT_TOO_LARGE,
@@ -97,20 +98,12 @@ enum ErrorCode {
 	OAUTH_NOT_READY
 };
 
-std::unordered_map<ErrorCode, std::string> error_messages = {
-	{ATTACHMENT_TOO_LARGE, "Attachment too large, limit is 25MB"},
-	{CANNOT_SEND_MESSAGE, "Cannot send message"},
-	{CANNOT_RETRIEVE_MESSAGE, "Cannot retrieve message"},
-	{CANNOT_RETRIEVE_MESSAGE_ID, "Cannot retrieve message id"},
-	{CANNOT_INIT_UPLOAD, "Cannot initialize upload"},
-	{CANNOT_MARK_AS_READ, "Cannot mark message as read"},
-	{OAUTH_NOT_READY, "OAuth not ready"}
-};
 
 class GmailError: public std::exception {
 	private:
 		std::string message;
 		ErrorCode code;
+		static std::unordered_map<ErrorCode, std::string> error_messages;
 		
 	public:
 		GmailError(ErrorCode code) : code(code), message(error_messages[code]) {}

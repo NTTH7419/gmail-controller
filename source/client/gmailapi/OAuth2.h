@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
 #include <curl/curl.h>
 #include <iostream>
 #include <fstream>
@@ -33,8 +35,8 @@ class OAuth {
 		bool is_error;
 		std::string error_message;
 
-		void openGoogleLogin();
-		std::string getAuthCode();
+		std::string openLoginUI();
+		std::string getAuthCode(const std::string& url);
 		std::string getTokenResponse(const std::string& auth_code);
 		void writeTokenToFile();
 		void refreshToken();

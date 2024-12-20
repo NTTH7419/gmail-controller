@@ -1,5 +1,16 @@
 #include "gmail-api.h"
 
+std::unordered_map<ErrorCode, std::string> GmailError::error_messages = {
+	{ATTACHMENT_TOO_LARGE, "Attachment too large, limit is 25MB"},
+	{CANNOT_SEND_MESSAGE, "Cannot send message"},
+	{CANNOT_RETRIEVE_MESSAGE, "Cannot retrieve message"},
+	{CANNOT_RETRIEVE_MESSAGE_ID, "Cannot retrieve message id"},
+	{CANNOT_INIT_UPLOAD, "Cannot initialize upload"},
+	{CANNOT_MARK_AS_READ, "Cannot mark message as read"},
+	{OAUTH_NOT_READY, "OAuth not ready"}
+};
+
+
 Attachment::Attachment(std::string file_path, std::string file_name) : file_path(file_path), file_name (file_name) {
     readFile();
     file_size = file_content.size();

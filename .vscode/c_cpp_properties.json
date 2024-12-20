@@ -6,7 +6,9 @@
                 "${workspaceFolder}/source/client/lib/curl_8.11/**",
                 "${workspaceFolder}/source/client/lib/curl_8.11/include/**",
                 "${workspaceFolder}/source/client/lib/json/include/**",
+                "${workspaceFolder}/source/client/lib/FTXUI/include/**",
                 "C:\\MinGW\\include\\**"
+
             ],
             "defines": [],
             "compilerPath": "C:\\MinGW\\bin\\g++.exe",

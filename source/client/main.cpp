@@ -164,7 +164,7 @@ public:
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    FreeConsole();
+    // FreeConsole();
     GUI gui(hInstance);
 
     if (!gui.initialize()) {

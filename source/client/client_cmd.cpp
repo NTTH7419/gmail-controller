@@ -296,7 +296,7 @@ void HelpCommand::execute(Client& client) {
 
 5/ Application:
 a/ List Applications
-- Subject: listapp
+- Subject: listapps
 - Body: IP (line 1)
 - Return list of applications in .txt
 
@@ -310,7 +310,7 @@ c/ Stop Application:
 
 6/ Service:
 a/ List Services
-- Subject: listser
+- Subject: listsers
 - Body: IP (line 1)
 - Return list of services in .txt
 
@@ -324,7 +324,7 @@ c/ Stop Service:
 
 7/ File:
 a/ List File
-- Subject: listfile
+- Subject: listfiles
 - Body: IP (line 1), directory path (line 2)
 - Return list of files in .txt
 

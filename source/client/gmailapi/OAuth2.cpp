@@ -1,16 +1,13 @@
 #include "OAuth2.h"
 
-std::string OAuth::getAuthCode() {
-	std::string url;
-	std::cout << "Input the URL Google redirected you to: ";
-	std::cin >> url;
-	
+std::string OAuth::getAuthCode(const std::string& url) {
+    
 	int idx = url.find("code=");
 	if (idx == std::string::npos) {
         return "";
     }
 	
-    std::string auth_code = url.erase(0, idx + 5);
+    std::string auth_code =  url.substr(idx + 5);
     idx = auth_code.find("&");
     if (idx != std::string::npos) {
         auth_code.erase(idx);
@@ -18,14 +15,14 @@ std::string OAuth::getAuthCode() {
     return auth_code;
 }
 
-void OAuth::openGoogleLogin() {
+std::string OAuth::openLoginUI() {
     // prepare parameter
     const std::string scope = "https://mail.google.com/";
     const std::string response_type = "code";
     const std::string access_type = "offline";
     const std::string prompt = "consent";
 
-	// construct url
+    // construct url
     std::string auth_url = credential.auth_uri;
     auth_url += "?client_id=" + credential.client_id;
     auth_url += "&redirect_uri=" + credential.redirect_uri;
@@ -34,9 +31,46 @@ void OAuth::openGoogleLogin() {
     auth_url += "&access_type=" + access_type;
     auth_url += "&prompt=" + prompt;
 
-	// open google login
-	std::string command = "start \"\" \"" + auth_url + '\"';  // start "" "auth_url"
-	system(command.c_str());
+    // Function to open the URL in the default browser
+    auto open_url_in_browser = [&auth_url]() {
+        std::string command = "start \"\" \"" + auth_url + "\"";
+        std::system(command.c_str());  // Open URL in the default browser
+    };
+
+    // Create FTXUI screen
+    auto screen = ftxui::ScreenInteractive::Fullscreen();
+
+    std::string input_token;
+    auto input = ftxui::Input(&input_token, "Paste URL here");
+    auto button = ftxui::Button("Login", [&] {
+        if (!input_token.empty()) {
+            screen.ExitLoopClosure()();  // Exit the login loop
+        }
+    });
+
+    // Button for opening the Google login URL in the browser
+    auto open_url_button = ftxui::Button("Click here to log in", open_url_in_browser);
+
+    // Create the login window layout
+    auto login_window = ftxui::Container::Vertical({
+        ftxui::Renderer([&auth_url] { return ftxui::text("Click the button below to login. After that, paste the url Google that redirect you to the box below."); }),
+        open_url_button,  // Button for opening the URL
+        input,
+        button,
+    });
+
+    // Main component with border and title
+    auto main_component = ftxui::Renderer(login_window, [&] {
+        return ftxui::vbox({
+            ftxui::text("Login Window") | ftxui::bold,
+            login_window->Render(),
+        }) | ftxui::border;
+    });
+
+    screen.Loop(main_component);
+
+    FreeConsole();
+    return input_token;
 }
 
 std::string OAuth::getTokenResponse(const std::string& auth_code) {
@@ -52,9 +86,8 @@ std::string OAuth::getTokenResponse(const std::string& auth_code) {
 }
 
 void OAuth::login() {
-	openGoogleLogin();
 
-    std::string auth_code = getAuthCode();
+    std::string auth_code = getAuthCode(openLoginUI());
     if (auth_code.empty()) {
         is_error = true;
         error_message = "Auth code not found.";
@@ -67,7 +100,6 @@ void OAuth::login() {
         error_message = "Token response not found.";
         return;
     }
-
 
     json j = json::parse(token_response);
     if (j.contains("access_token") && j.contains("refresh_token") && j.contains("expires_in")) {

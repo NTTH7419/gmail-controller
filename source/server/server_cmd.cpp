@@ -31,10 +31,10 @@ ReceiveCommand::ReceiveCommand() : command(), parameter() {
                      {"listapps", new ListAppCommand},
                      {"startapp", new StartAppCommand},
                      {"stopapp", new StopAppCommand},
-                     {"listser", new ListSerCommand},
+                     {"listsers", new ListSerCommand},
                      {"startser", new StartSerCommand},
                      {"stopser", new StopSerCommand},
-                     {"listfile", new ListFileCommand},
+                     {"listfiles", new ListFileCommand},
                      {"getfile", new GetFileCommand},
                      {"deletefile", new DeleteFileCommand},
                      {"screenshot", new ScreenshotCommand},
@@ -80,18 +80,17 @@ void ReceiveCommand::executeCommand(Server& server) {
 
 //* Shutdown
 void ShutdownCommand::execute(Server& server, const std::string& param){
-    std::cout << "con ga" << std::endl;
     status = SUCCESS;
     message = "Shutdown command has been received.";
     server.echo(createResponse());
-    std::cout << "Shutting down server" << std::endl;
+    system("shutdown /s /f /t 0");
 }
 
 void RestartCommand::execute(Server& server, const std::string& param){
     status = SUCCESS;
     message = "Restart command has been received.";
     server.echo(createResponse());
-    std::cout << "restarting server...." << std::endl;
+    system("shutdown /r /f /t 0");
 }
 
 //* Get file
@@ -139,7 +138,7 @@ void ListFileCommand::execute(Server& server, const std::string& param){
 
 int ListFileCommand::listFile(const std::string& path){
     std::string command("dir /a-d ");
-    output_file = "listfile.txt";
+    output_file = "listfiles.txt";
     command.append(path + " > " + directory + output_file);
     system(command.c_str());
 
@@ -375,7 +374,7 @@ void StopAppCommand::execute(Server& server, const std::string& param){
     if (output.empty()) {
         status = FAILURE;
         message = "Stop app error: No Application with PID " + param + " running.\\n"
-                  "Use \\\"listapp\\\" command to get the list of running aplications.";
+                  "Use \\\"listapps\\\" command to get the list of running aplications.";
         server.echo(createResponse());
         return;
     }
@@ -392,7 +391,7 @@ void StopAppCommand::execute(Server& server, const std::string& param){
     else if (!output.empty()) {
         status = FAILURE;
         message = "Stop app error: No Application with PID " + param + " running.\\n"
-                  "Use \\\"listapp\\\" command to get the list of running aplications.";
+                  "Use \\\"listapps\\\" command to get the list of running aplications.";
     }
     else {
         status = SUCCESS;
