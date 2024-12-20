@@ -8,12 +8,11 @@ void Client::displayLog(const std::string& log){
     time_t curr_time;
 	curr_time = time(NULL);
 
+    char buffer[20];
+    strftime(buffer, 20, "[%H:%M:%S] ", localtime(&curr_time));
+
 	tm *tm_local = localtime(&curr_time);
-    LPARAM msg = (LPARAM)new std::string(
-        "[" + std::to_string(tm_local->tm_hour) + ":" 
-            + std::to_string(tm_local->tm_min) + ":" 
-            + std::to_string(tm_local->tm_sec) + "] " 
-            + log + '\n');
+    LPARAM msg = (LPARAM)new std::string(buffer + log + '\n');
 
     PostMessage(hwndMain, WM_APP, 0, msg);
 }

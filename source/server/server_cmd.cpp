@@ -180,14 +180,14 @@ int ListFileCommand::listFile(const std::string& path){
 void DeleteFileCommand::execute(Server& server, const std::string& param){
     std::ifstream file(param);
     if (!file.good())
-        status = SUCCESS;
-    else{
         status = FAILURE;
+    else {
         file.close();
         system(("del " + param).c_str());
+        status = SUCCESS;
     }
     
-    if (status == 0)
+    if (status == SUCCESS)
         message = "File at \\\"" + toRawString(param) + "\\\" deleted successfully\n";
     else
         message = "Delete file error: File at \\\"" + toRawString(param) + "\\\" does not exist.";

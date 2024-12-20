@@ -69,7 +69,6 @@ std::string OAuth::openLoginUI() {
 
     screen.Loop(main_component);
 
-    FreeConsole();
     return input_token;
 }
 
@@ -189,6 +188,7 @@ void OAuth::init() {
 
     refreshToken();
 
+    FreeConsole();
     is_error = false;
     error_message.clear();
 }

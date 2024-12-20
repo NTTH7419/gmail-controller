@@ -216,10 +216,10 @@ void ScreenshotCommand::execute(Client& client){
 void GetIPsCommand::execute(Client& client){
     int status = SUCCESS;
     std::string message;
-    message = "List of available IPs: \\n";
+    message = "List of available IPs:\n";
 
     for (auto ip : client.getIPList()) {
-        message += ip + "\\n";
+        message += ip + "\n";
     }
 
     json j;

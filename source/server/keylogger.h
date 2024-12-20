@@ -6,8 +6,7 @@
 #include <time.h>
 #include <atomic>
 
-#define KL_PRESSED	1
-
+#define KL_PRESSED 1
 #define KL_WAITING 0
 #define KL_RUNNING 1
 #define KL_FINISHED 2
