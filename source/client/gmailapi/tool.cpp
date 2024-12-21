@@ -49,7 +49,7 @@ HTTPResponse makeRequest(const std::string& request_url, curl_slist *headers, co
 
         res = curl_easy_perform(curl);
         if (res != CURLE_OK)
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            throw std::runtime_error(std::string("curl_easy_perform() failed: ") + curl_easy_strerror(res));
 
         if (headers) curl_slist_free_all(headers);
         curl_easy_cleanup(curl);

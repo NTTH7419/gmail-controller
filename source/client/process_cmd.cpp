@@ -174,11 +174,15 @@ void ProcessCommand::sendResponse(const std::string& response_string, const Atta
             return;
         }
     }
+    catch (std::runtime_error& re) {
+        addLog(re.what());
+    }
 }
 
 void ProcessCommand::processResponse() {
     json j;
     try {
+        addLog(response);
         j = json::parse(response);
         if (j["status"] == -1) {
             sendResponse("An error has occur when executing the command.");

@@ -184,7 +184,8 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     std::string text_message = message.getMessage(attachment);
     int message_length = text_message.length();
 
-    if (message_length > 25 * 1024 * 1024) {// 25 MB
+    if (attachment.getFileSize() > 25 * 1024 * 1024 ||
+                   message_length > 30 * 1024 * 1024) {
         throw GmailError(ErrorCode::ATTACHMENT_TOO_LARGE);
     }
 
@@ -219,6 +220,7 @@ void GmailAPI::sendMessageWithAttachment(const Message& message, const Attachmen
     response = makeRequest(session_uri, headers, text_message, "PUT");
 
     int code = response.getStatus();
+
     if (code != 200 && code != 100) {   // 200: OK, 100: Continue
         throw GmailError(ErrorCode::CANNOT_SEND_MESSAGE);
     }
@@ -239,7 +241,9 @@ void GmailAPI::sendMessageWithoutAttachment(const Message& message) {
     std::string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
 
     HTTPResponse response = makeRequest(url, headers, post_fields, "POST");
-    if (response.getStatus() != 200) {
+
+    int code  = response.getStatus();
+    if (code != 200 && code != 100) {   // 200: OK, 100: Continue
         throw GmailError(ErrorCode::CANNOT_SEND_MESSAGE);
     }
 }
@@ -265,7 +269,7 @@ std::string GmailAPI::getLatestMessageID(const std::string& query) {
     headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
 
     std::string url = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
-           url += "?maxResults=1&includeSpamTrash=true&q=" + urlEncode(query);
+                url += "?maxResults=1&includeSpamTrash=true&q=" + urlEncode(query);
 
     HTTPResponse response = makeRequest(url, headers, "", "GET");
     if (response.getStatus() != 200) {

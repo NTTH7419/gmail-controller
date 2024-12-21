@@ -1086,11 +1086,11 @@ void StopRecordCommand::execute(Server& server, const std::string& param){
             file_name = outfile;
         }
         else{
-            message = "Failed to send the photo to client.";
+            message = "Failed to send the video to client.";
         }
     }
     else{
-        server.echo("OOF");
+        server.echo("NOT_RUNNING");
     }
 
     server.echo(createResponse());

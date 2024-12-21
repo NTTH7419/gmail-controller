@@ -203,3 +203,4 @@ int sendFile(Server& server, const std::string& filepath) {
     std::cout << "file sent" << std::endl;
     return 0;
 }
+

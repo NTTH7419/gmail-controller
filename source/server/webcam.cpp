@@ -156,8 +156,8 @@ int WebcamController::StartRecord(std::string& message){
     std::ostringstream command;
     command << "\"ffmpeg.exe\" -hide_banner -loglevel quiet "
             << "-f dshow -i video=\"" << webcamName << "\" "
-            << "-c:v libx264 -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y"
-            << "\"" + directory + "video.mp4\"";
+            << "-c:v libx264 -fs 23M -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y "
+            << directory + "video.mp4\"";
 
     LPSTR cmdLine = _strdup(command.str().c_str());
 
@@ -178,7 +178,7 @@ int WebcamController::StopRecord(std::string& message){
     if (hStdInWrite && recordingProcess.hProcess) {
         // Send 'q' to FFmpeg's stdin to stop recording gracefully
         DWORD bytesWritten;
-        WriteFile(hStdInWrite, "q\n", 2, &bytesWritten, NULL);
+        WriteFile(hStdInWrite, "q", 2, &bytesWritten, NULL);
 
         // Wait for the FFmpeg process to exit
         WaitForSingleObject(recordingProcess.hProcess, INFINITE);
