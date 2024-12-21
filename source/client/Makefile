@@ -12,14 +12,17 @@ SRCS = $(wildcard *.cpp) $(wildcard gmailapi/*.cpp) \
 BIN_DIR = ../../release/client
 BUILD_DIR = build
 
+# Define the target executable name
+TARGET = client
+
 # Generate object files from source files
 OBJS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
 # Default target
-all: $(BIN_DIR)/main
+all: $(BIN_DIR)/$(TARGET)
 
 # Link object files to create the final executable
-$(BIN_DIR)/main: $(OBJS)
+$(BIN_DIR)/$(TARGET): $(OBJS)
 ifeq ($(OS),Windows_NT)
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 else
@@ -39,8 +42,8 @@ endif
 # Cleanup
 clean:
 ifeq ($(OS),Windows_NT)
-	del /Q $(BIN_DIR)\main.exe $(BUILD_DIR)\*.o
+	del /Q $(BIN_DIR)\$(TARGET).exe $(BUILD_DIR)\*.o
 else
-	rm -f $(BIN_DIR)/main $(OBJS)
+	rm -f $(BIN_DIR)/$(TARGET) $(OBJS)
 	rm -rf $(BUILD_DIR)
 endif

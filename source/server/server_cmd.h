@@ -126,6 +126,7 @@ class StartSerCommand : public Command{
 public:
     void execute(Server& server, const std::string& param) override;
 };
+
 class StopSerCommand : public Command{
     public:
     void execute(Server& server, const std::string& param) override;

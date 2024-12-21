@@ -156,7 +156,7 @@ int WebcamController::StartRecord(std::string& message){
     std::ostringstream command;
     command << "\"ffmpeg.exe\" -hide_banner -loglevel quiet "
             << "-f dshow -i video=\"" << webcamName << "\" "
-            << "-c:v libx264 -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y -fs 23M"
+            << "-c:v libx264 -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y"
             << "\"" + directory + "video.mp4\"";
 
     LPSTR cmdLine = _strdup(command.str().c_str());
