@@ -54,7 +54,7 @@ void Client::sendDiscovery(){
         else{
             if (WSAGetLastError() == WSAETIMEDOUT) {
                 // std::cout << "Timeout reached. No more responses." << std::endl;
-                addLog("Timeout reached. No more responses.");
+                addLog("Timeout reached. Stop finding computer.");
                 break;
             }
         }
