@@ -50,8 +50,6 @@ private:
     int createSocket();
     int bindSocket();
     int acceptConnection();
-    int getIP();
-    
 
 public:
     Server();
@@ -61,7 +59,6 @@ public:
     void broadcastDiscovery();
 
     SOCKET& getClientSocket();
-    int process(std::string);
     std::string receive();
     void echo(const std::string& message);
 

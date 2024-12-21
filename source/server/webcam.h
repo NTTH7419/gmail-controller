@@ -29,9 +29,8 @@ public:
     static void deleteInstance();
     static WebcamController* getInstance();
     std::string getWebcam();
-    int takePhoto(std::string& message);
+    int takePhoto(std::string& message, std::string& file_name);
     bool isRecording();
     int StartRecord(std::string& message);
     int StopRecord(std::string& message);
-
 };

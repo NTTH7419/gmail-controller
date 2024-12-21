@@ -159,7 +159,7 @@ int receiveFile(Client& client, const std::string& ip, const std::string& direct
     buffer[byte_received] = '\0';
 
     if (strcmp(buffer, "error") == 0){
-        addLog(ip + ": Error, File could not be sent");
+        addLog(ip + ": Error: Server cannot send file.");
         return 1;
     }
 

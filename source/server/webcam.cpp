@@ -17,14 +17,14 @@ std::string WebcamController::detectWebcam(){
 
     HRESULT hr = CoInitialize(NULL);
     if (FAILED(hr)) {
-        std::cerr << "Failed to initialize COM library." << std::endl;
+        // std::cerr << "Failed to initialize COM library." << std::endl;
         return webcamName;
     }
 
     ICreateDevEnum* pDevEnum = NULL;
     hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER, IID_ICreateDevEnum, (void**)&pDevEnum);
     if (FAILED(hr)) {
-        std::cerr << "Failed to create device enumerator." << std::endl;
+        // std::cerr << "Failed to create device enumerator." << std::endl;
         CoUninitialize();
         return webcamName;
     }
@@ -63,42 +63,40 @@ std::string WebcamController::getWebcam(){
     return webcamName;
 }
 
-int WebcamController::takePhoto(std::string& message){
+int WebcamController::takePhoto(std::string& message, std::string& file_name){
     if (webcamName.empty()){
-        message = "Webcam not found";
+        message = "Take photo error: Webcam not found";
         return FAILURE;
     }
 
     if (isRecording()) {
-        message = "Recording is in progress, please stop before taking a photo";
+        message = "Take photo error: Recording is in progress.\\nStop record using \\\"stoprecord\\\" command before taking a photo";
         return FAILURE;
     }
 
     std::ostringstream cmd;
-    cmd << "\"ffmpeg.exe\" "
+    cmd << "\"ffmpeg\" "
             << "-f dshow -i video=\"" << webcamName << "\" "
             << "-loglevel quiet -vframes 1 -rtbufsize 100M -y -update 1 "
-            << directory + "snapshot.png";
+            << directory + file_name;
 
-    // Initialize STARTUPINFO and PROCESS_INFORMATION structs
     STARTUPINFO si = { sizeof(si) };
     PROCESS_INFORMATION pi;
 
-    // Convert the string command to a C-string (LPSTR)
     LPSTR cmdLine = _strdup(cmd.str().c_str());
 
     // Create the process
     if (CreateProcess(
-            NULL,        // Application name
-            cmdLine,     // Command line
-            NULL,        // Process security attributes
-            NULL,        // Thread security attributes
-            FALSE,       // Inherit handles
-            0,           // Creation flags
-            NULL,        // Environment block
-            NULL,        // Current directory
-            &si,         // Startup information
-            &pi          // Process information
+            NULL,
+            cmdLine,
+            NULL,
+            NULL,
+            FALSE,
+            0,
+            NULL,
+            NULL,
+            &si,
+            &pi
     )) {
         message = "Snapshot captured successfully!";
 
@@ -109,7 +107,7 @@ int WebcamController::takePhoto(std::string& message){
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
     } else {
-        message = "Error: Failed to capture snapshot";
+        message = "Take photo error: Failed to capture snapshot";
         return FAILURE;
     }
 
@@ -128,12 +126,12 @@ bool WebcamController::isRecording(){
 
 int WebcamController::StartRecord(std::string& message){
     if (webcamName.empty()){
-        message = "Webcam not found";
+        message = "Start record error: Webcam not found";
         return FAILURE;
     }
 
     if (recordingProcess.hProcess){
-        message = "Recording already started";
+        message = "Start record error: Recording already started.";
         return FAILURE;
     }
 
@@ -143,7 +141,7 @@ int WebcamController::StartRecord(std::string& message){
     // Create a pipe for communication with FFmpeg
     HANDLE hStdInRead = NULL;
     if (!CreatePipe(&hStdInRead, &hStdInWrite, &sa, 0)) {
-        message = "Failed to create pipe for communication.";
+        message = "Start record error: Failed to create pipe for communication.";
         recordingProcess = { 0 };
         return FAILURE;
     }
@@ -154,7 +152,7 @@ int WebcamController::StartRecord(std::string& message){
     si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
     std::ostringstream command;
-    command << "\"ffmpeg.exe\" -hide_banner -loglevel quiet "
+    command << "\"ffmpeg\" -hide_banner -loglevel quiet "
             << "-f dshow -i video=\"" << webcamName << "\" "
             << "-c:v libx264 -fs 23M -pix_fmt yuv420p -preset ultrafast -movflags +faststart -y "
             << directory + "video.mp4\"";
@@ -162,7 +160,7 @@ int WebcamController::StartRecord(std::string& message){
     LPSTR cmdLine = _strdup(command.str().c_str());
 
     if (!CreateProcess(NULL, cmdLine, NULL, NULL, TRUE, 0, NULL, NULL, &si, &recordingProcess)) {
-        message = "Error: Failed to start recording.";
+        message = "Start record error: Failed to start recording.";
         ZeroMemory(&recordingProcess, sizeof(recordingProcess)); // Ensure process information is zeroed out on failure
         return FAILURE;
     }
@@ -170,7 +168,7 @@ int WebcamController::StartRecord(std::string& message){
     CloseHandle(hStdInRead); // Close the read end of the pipe (not needed in the parent process)
     free(cmdLine);
 
-    message = "Recording started successfully.";
+    message = "Recording started successfully.\\nUse \\\"stoprecord\\\" command to stop recording and retreive record file.";
     return SUCCESS;
 }
 
@@ -188,12 +186,12 @@ int WebcamController::StopRecord(std::string& message){
         CloseHandle(recordingProcess.hThread);
         CloseHandle(hStdInWrite);
 
-        message = "Recording stopped successfully!";
+        message = "Recording stopped successfully.";
         ZeroMemory(&recordingProcess, sizeof(recordingProcess));
         hStdInWrite = NULL;
         return SUCCESS;
     } else {
-        message = "No recording process found to stop.";
+        message = "No recording process found to stop.\\nUse \\\"startrecord\\\" command to start recording.";
         return FAILURE;
     }
 }

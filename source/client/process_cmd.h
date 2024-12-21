@@ -16,7 +16,7 @@ class ProcessCommand {
         std::string getIP() const;
         std::string getParameter() const;
         void sendResponse(const std::string& response_string, const Attachment& attachment = {});
-        void processResponse();
+        void processResponse(const std::string& ip);
     public:
         ProcessCommand();
         ~ProcessCommand();

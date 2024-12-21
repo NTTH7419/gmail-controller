@@ -10,7 +10,7 @@ SRCS = $(wildcard *.cpp) $(wildcard gmailapi/*.cpp) \
 
 # Specify the directories for the output executable and object files
 BIN_DIR = ../../release/client
-BUILD_DIR = build
+BUILD_DIR = ../../build/client
 
 # Define the target executable name
 TARGET = client

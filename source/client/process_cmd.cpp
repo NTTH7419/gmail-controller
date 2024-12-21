@@ -116,7 +116,7 @@ void ProcessCommand::executeCommand(Client& client) {
         commands[command]->execute(client);
         response = commands[command]->getResponse();
         addLog("Command \"" + command + "\" has been executed.");
-        processResponse();
+        processResponse("");
         message.clear();
         return;
     }
@@ -126,7 +126,7 @@ void ProcessCommand::executeCommand(Client& client) {
 	SOCKET server_socket = client.getServerSocket(ip);
     if (server_socket == INVALID_SOCKET) {
         std::string error_response;
-        error_response = "You have entered an invalid IP address.\n";
+        error_response = "You have entered \"" + ip + "\", which is an invalid IP address.\n";
         error_response += "Please try again, or send command \"getips\" to get the list of available computers.";
         sendResponse(error_response);
         message.clear();
@@ -134,11 +134,11 @@ void ProcessCommand::executeCommand(Client& client) {
         return;
     }
 
-    addLog("Command \"" + command + "\" has been sent to " + ip + ", parameter: " + param);
+    addLog("Command \"" + command + "\" has been sent to " + ip + ".");
     commands[command]->setCommandInfo(ip, command, param);
     commands[command]->execute(client);
     response = commands[command]->getResponse();
-    processResponse();
+    processResponse(ip);
     message.clear();
 }
 
@@ -177,25 +177,27 @@ void ProcessCommand::sendResponse(const std::string& response_string, const Atta
     }
 }
 
-void ProcessCommand::processResponse() {
+void ProcessCommand::processResponse(const std::string& ip) {
     json j;
     try {
         j = json::parse(response);
         if (j["status"] == -1) {
-            sendResponse("An error has occur when executing the command.");
-            addLog("An error has occur when executing the command.");
+            sendResponse("An error has occur when executing the command (IP: " + ip + ").");
+            addLog(ip + ": An error has occur when executing the command.");
             return;
         }
+        std::string file_name = std::string(j["file"]);
         if (j["status"] == SUCCESS && j["file"] != "") {
-            sendResponse(j["message"], Attachment(directory + std::string(j["file"]), j["file"]));
+            sendResponse(j["message"], Attachment(directory + file_name, file_name));
+            system(("del " + directory + file_name).c_str());
         }
         else {
             sendResponse(j["message"]);
         }
-        addLog(j["message"]);
+        addLog(ip + ": " + std::string(j["message"]));
     }
     catch (std::exception& e) {
-        sendResponse("An error has occur when processing server response.");
-        addLog("An error has occur when processing server response.");
+        sendResponse("An error has occur when processing server response (IP: " + ip + ").");
+        addLog(ip + ": An error has occur when processing server response.");
     }
 }

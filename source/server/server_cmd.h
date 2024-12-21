@@ -13,10 +13,6 @@
 #define SUCCESS 0
 #define FAILURE 1
 
-// typedef SHORT PROPID;
-
-using namespace Gdiplus;
-
 
 class Command;
 class ReceiveCommand;
@@ -156,3 +152,5 @@ class StopRecordCommand : public Command{
 public:
     void execute(Server& server, const std::string& param) override;
 };
+
+

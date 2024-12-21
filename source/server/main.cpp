@@ -1,7 +1,7 @@
 #include "server_cmd.h"
 
 int __cdecl main(void) {
-	// FreeConsole();
+	FreeConsole();
     Server server;
 	ReceiveCommand rc;
     server.initialize();
@@ -13,7 +13,7 @@ int __cdecl main(void) {
 				rc.executeCommand(server);
 			}
 			else{
-				std::cout << "No client available!" << std::endl;
+				// std::cout << "No client available!" << std::endl;
 				server.broadcastDiscovery();
 				server.listenForConnection();
 			}
