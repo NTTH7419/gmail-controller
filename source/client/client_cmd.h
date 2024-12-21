@@ -9,7 +9,6 @@
 
 using json = nlohmann::json;
 
-
 class Command;
 class ProcessCommand;
 class ShutdownCommand;

@@ -1,26 +1,11 @@
 #include "client_socket.h"
 
-Client::Client(HWND& hwndMain) : hwndMain(hwndMain){
-
-}
-
-void Client::displayLog(const std::string& log){
-    time_t curr_time;
-	curr_time = time(NULL);
-
-    char buffer[20];
-    strftime(buffer, 20, "[%H:%M:%S] ", localtime(&curr_time));
-
-	tm *tm_local = localtime(&curr_time);
-    LPARAM msg = (LPARAM)new std::string(buffer + log + '\n');
-
-    PostMessage(hwndMain, WM_APP, 0, msg);
-}
+Client::Client(){}
 
 void Client::initialize(){
     int error = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (error != 0) {
-        displayLog("WSAStartup failed with error: " + std::to_string(error) + ".");
+        addLog("WSAStartup failed with error: " + std::to_string(error) + ".");
         return;
     }
 
@@ -44,7 +29,7 @@ void Client::sendDiscovery(){
 
     std::string message = "DISCOVER_SERVER";
 
-    displayLog("Scanning for available computer servers...");
+    addLog("Scanning for available computer servers...");
     sendto(udp_discovery, message.c_str(), message.size(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
     int bytes_received;  
     
@@ -69,7 +54,7 @@ void Client::sendDiscovery(){
         else{
             if (WSAGetLastError() == WSAETIMEDOUT) {
                 // std::cout << "Timeout reached. No more responses." << std::endl;
-                displayLog("Timeout reached. No more responses.");
+                addLog("Timeout reached. No more responses.");
                 break;
             }
         }
@@ -97,7 +82,7 @@ std::vector<std::string> Client::getIPList(){
 bool Client::connectToServer(const char* address){
     int error = getaddrinfo(address, DEFAULT_PORT, &hints, &result);
     if (error != 0 ) {
-        displayLog("getaddrinfo failed with error" + std::to_string(error) + ".");
+        addLog("getaddrinfo failed with error" + std::to_string(error) + ".");
         return false;
     }
     
@@ -109,7 +94,7 @@ bool Client::connectToServer(const char* address){
             ptr->ai_protocol));
 
         if (server_sockets[std::string(address)] == INVALID_SOCKET) {
-            displayLog("socket failed with error: " +  std::to_string(WSAGetLastError()));
+            addLog("socket failed with error: " +  std::to_string(WSAGetLastError()));
             return false;
         }
         error = connect(server_sockets[std::string(address)], ptr->ai_addr, (int)ptr->ai_addrlen);
@@ -123,10 +108,10 @@ bool Client::connectToServer(const char* address){
     }
 
     if (server_sockets[std::string(address)] == INVALID_SOCKET) {
-        displayLog("Unable to connect to server(s).");
+        addLog("Unable to connect to server(s).");
         return false;
     }
-    displayLog("Connected to computer with IP: " + std::string(address) + ".");
+    addLog("Connected to computer with IP: " + std::string(address) + ".");
 
     freeaddrinfo(result);
     return true;
@@ -174,7 +159,7 @@ int receiveFile(Client& client, const std::string& ip, const std::string& direct
     buffer[byte_received] = '\0';
 
     if (strcmp(buffer, "error") == 0){
-        client.displayLog(ip + ": Error, File could not be sent");
+        addLog(ip + ": Error, File could not be sent");
         return 1;
     }
 

@@ -222,7 +222,6 @@ void StopKeylogCommand::execute(Client& client) {
 
 
 void HelpCommand::execute(Client& client) {
-    int status = SUCCESS;
     std::string help_text = R"(List of available commands:
 
 1/ Help:
@@ -317,7 +316,7 @@ b/ Stop recording keystroke
 - Require startkeylog to be called before, maximum time length: 300 seconds)";
 
     json j;
-    j["status"] = status;
+    j["status"] = SUCCESS;
     j["message"] = help_text;
     j["file"] = "";
     response = j.dump();

@@ -16,7 +16,7 @@ BUILD_DIR = build
 OBJS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
 # Default target
-all: $(BIN_DIR)/client
+all: $(BIN_DIR)/main
 
 # Link object files to create the final executable
 $(BIN_DIR)/main: $(OBJS)

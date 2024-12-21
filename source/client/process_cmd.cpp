@@ -2,7 +2,7 @@
 
 const std::string ProcessCommand::directory = "temp\\";
 
-ProcessCommand::ProcessCommand(HWND& hwndMain) : message(), response(), hwndMain(hwndMain), gmailapi() {
+ProcessCommand::ProcessCommand() : message(), response(), gmailapi() {
     updateSenderQuery();
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"getips", new GetIPsCommand},
@@ -27,9 +27,10 @@ ProcessCommand::ProcessCommand(HWND& hwndMain) : message(), response(), hwndMain
     
     try {
         gmailapi.initOAuth();
+        addLog("Authenticate successfully");
     }
     catch (GmailError& ge) {
-        displayLog(ge.what());
+        addLog(ge.what());
     }
 }
 
@@ -67,6 +68,8 @@ void ProcessCommand::updateSenderQuery() {
     }
     sender_query += "is:unread";
     fin.close();
+
+    addLog("Updated valid email list.");
 }
 
 std::string ProcessCommand::getCommand() const{
@@ -91,19 +94,6 @@ std::string ProcessCommand::getParameter() const{
     return param;
 }
 
-void ProcessCommand::displayLog(const std::string& log){
-    time_t curr_time;
-	curr_time = time(NULL);
-
-    char buffer[20];
-    strftime(buffer, 20, "[%H:%M:%S] ", localtime(&curr_time));
-
-	tm *tm_local = localtime(&curr_time);
-    LPARAM msg = (LPARAM)new std::string(buffer + log + '\n');
-
-    PostMessage(hwndMain, WM_APP, 0, msg);
-}
-
 void ProcessCommand::executeCommand(Client& client) {
     if (message.isEmpty()) return;
 
@@ -116,7 +106,7 @@ void ProcessCommand::executeCommand(Client& client) {
         error_response = "You have entered the wrong command.";
         error_response += "Please try again, or send command \"help\" to get the list of available commands.";
         sendResponse(error_response);
-        displayLog("Received wrong command.");
+        addLog("Received wrong command.");
         message.clear();
         return;
     }
@@ -125,7 +115,7 @@ void ProcessCommand::executeCommand(Client& client) {
     if (command == "help" || command == "getips") {
         commands[command]->execute(client);
         response = commands[command]->getResponse();
-        displayLog("Command \"" + command + "\" has been executed.");
+        addLog("Command \"" + command + "\" has been executed.");
         processResponse();
         message.clear();
         return;
@@ -140,19 +130,16 @@ void ProcessCommand::executeCommand(Client& client) {
         error_response += "Please try again, or send command \"getips\" to get the list of available computers.";
         sendResponse(error_response);
         message.clear();
-        displayLog("Invalid IP: " + ip);
-    }
-    else{
-        commands[command]->setCommandInfo(ip, command, param);
-        commands[command]->execute(client);
-        response = commands[command]->getResponse();
-        processResponse();
+        addLog("Invalid IP: " + ip);
+        return;
     }
 
-
+    commands[command]->setCommandInfo(ip, command, param);
+    commands[command]->execute(client);
+    response = commands[command]->getResponse();
+    processResponse();
     json j = json::parse(response);
-    displayLog(j["message"]);
-
+    addLog(ip + ": " + std::string(j["message"]));
     message.clear();
 }
 
@@ -163,7 +150,7 @@ bool ProcessCommand::getLatestMessage() {
         gmailapi.markAsRead(message.getGmailID());
     }
     catch (GmailError& ge) {
-        displayLog(ge.what());
+        addLog(ge.what());
         return false;
     }
 
@@ -180,7 +167,7 @@ void ProcessCommand::sendResponse(const std::string& response_string, const Atta
     gmailapi.replyMessage(message, response, attachment);
     }
     catch (GmailError& ge) {
-        displayLog(ge.what());
+        addLog(ge.what());
         if (ge.getCode() == ErrorCode::ATTACHMENT_TOO_LARGE) {
             response.setBody("Attachment is too large to send.");
             gmailapi.replyMessage(message, response);
@@ -204,6 +191,6 @@ void ProcessCommand::processResponse() {
     }
     catch (std::exception& e) {
         sendResponse("An error has occur when processing server response.");
-        displayLog("An error has occur when processing server response.");
+        addLog("An error has occur when processing server response.");
     }
 }

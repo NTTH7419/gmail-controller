@@ -26,10 +26,10 @@
 #define DISCOVERY_PORT 6666
 
 class Client;
+void addLog(const std::string &log);
 
 class Client{
 private:
-    HWND& hwndMain;
     WSADATA wsaData;
     std::unordered_map<std::string, SOCKET> server_sockets;
     std::vector<std::string> ips;
@@ -40,8 +40,7 @@ private:
     int buffer_len = DEFAULT_BUFLEN;
 
 public:
-    Client(HWND& hwndMain);
-    void displayLog(const std::string& log);
+    Client();
     void initialize();
     void sendDiscovery();
     SOCKET getServerSocket(std::string ip);

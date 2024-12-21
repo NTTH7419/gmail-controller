@@ -37,37 +37,46 @@ std::string OAuth::openLoginUI() {
         std::system(command.c_str());  // Open URL in the default browser
     };
 
+    using namespace ftxui;
+
     // Create FTXUI screen
-    auto screen = ftxui::ScreenInteractive::Fullscreen();
+    auto screen = ScreenInteractive::FitComponent();
 
     std::string input_token;
-    auto input = ftxui::Input(&input_token, "Paste URL here");
-    auto button = ftxui::Button("Login", [&] {
+    auto input = Input(&input_token, "Paste URL here");
+
+    auto continue_button = Button("Continue", [&] {
         if (!input_token.empty()) {
             screen.ExitLoopClosure()();  // Exit the login loop
         }
     });
 
     // Button for opening the Google login URL in the browser
-    auto open_url_button = ftxui::Button("Click here to log in", open_url_in_browser);
+    auto open_url_button = Button("Click here to log in", open_url_in_browser);
 
     // Create the login window layout
-    auto login_window = ftxui::Container::Vertical({
-        ftxui::Renderer([&auth_url] { return ftxui::text("Click the button below to login. After that, paste the url Google that redirect you to the box below."); }),
+    auto login_window = Container::Vertical({
+        Renderer([] { 
+            return paragraph("Click the button below to login. After that, paste the url Google that redirect you to the box below.");
+        }),
         open_url_button,  // Button for opening the URL
         input,
-        button,
+        continue_button,
     });
 
     // Main component with border and title
-    auto main_component = ftxui::Renderer(login_window, [&] {
-        return ftxui::vbox({
-            ftxui::text("Login Window") | ftxui::bold,
-            login_window->Render(),
-        }) | ftxui::border;
+    auto main_component = Renderer(login_window, [&] {
+        return vbox({
+            text("Login Window") | bold | hcenter,
+            separator(),
+            open_url_button->Render() | hcenter,
+            input->Render() | size(WIDTH, EQUAL, 50),
+            continue_button->Render() | hcenter,
+        }) | border | center;
     });
 
     screen.Loop(main_component);
+    system("cls");
 
     return input_token;
 }
@@ -188,7 +197,6 @@ void OAuth::init() {
 
     refreshToken();
 
-    FreeConsole();
     is_error = false;
     error_message.clear();
 }
