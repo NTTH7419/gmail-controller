@@ -103,7 +103,7 @@ void ProcessCommand::executeCommand(Client& client) {
     // check command
     if (command == "invalid") {
         std::string error_response;
-        error_response = "You have entered the wrong command.";
+        error_response = "You have entered the wrong command.\n";
         error_response += "Please try again, or send command \"help\" to get the list of available commands.";
         sendResponse(error_response);
         addLog("Received wrong command.");
@@ -126,7 +126,7 @@ void ProcessCommand::executeCommand(Client& client) {
 	SOCKET server_socket = client.getServerSocket(ip);
     if (server_socket == INVALID_SOCKET) {
         std::string error_response;
-        error_response = "You have entered an invalid IP address.";
+        error_response = "You have entered an invalid IP address.\n";
         error_response += "Please try again, or send command \"getips\" to get the list of available computers.";
         sendResponse(error_response);
         message.clear();
@@ -134,12 +134,11 @@ void ProcessCommand::executeCommand(Client& client) {
         return;
     }
 
+    addLog("Command \"" + command + "\" has been sent to " + ip + ", parameter: " + param);
     commands[command]->setCommandInfo(ip, command, param);
     commands[command]->execute(client);
     response = commands[command]->getResponse();
     processResponse();
-    json j = json::parse(response);
-    addLog(ip + ": " + std::string(j["message"]));
     message.clear();
 }
 
@@ -153,7 +152,6 @@ bool ProcessCommand::getLatestMessage() {
         addLog(ge.what());
         return false;
     }
-
     return true;
 }
 
@@ -182,16 +180,19 @@ void ProcessCommand::sendResponse(const std::string& response_string, const Atta
 void ProcessCommand::processResponse() {
     json j;
     try {
-        addLog(response);
         j = json::parse(response);
         if (j["status"] == -1) {
             sendResponse("An error has occur when executing the command.");
+            addLog("An error has occur when executing the command.");
             return;
         }
-        if (j["status"] == SUCCESS && j["file"] != "")
+        if (j["status"] == SUCCESS && j["file"] != "") {
             sendResponse(j["message"], Attachment(directory + std::string(j["file"]), j["file"]));
-        else
+        }
+        else {
             sendResponse(j["message"]);
+        }
+        addLog(j["message"]);
     }
     catch (std::exception& e) {
         sendResponse("An error has occur when processing server response.");

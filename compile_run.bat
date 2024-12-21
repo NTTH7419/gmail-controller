@@ -14,7 +14,7 @@ if %input% == 1 (
     ) else (
         if %input% == 3 (
             cd .\release\client
-            powershell -command "Start-Process client.exe -Verb runas"
+            powershell -command ".\client"
 	    pause
         ) else (
             if %input% == 4 (

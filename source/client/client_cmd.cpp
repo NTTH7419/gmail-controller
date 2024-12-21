@@ -375,7 +375,6 @@ void StartRecordCommand::execute(Client& client){
 void StopRecordCommand::execute(Client& client){
     if (sendCommand(client)){
         if (client.receiveResponse(ip) == "RUNNING"){
-            addLog("NIGGA");
             receiveFile(client, ip, directory);
         }
         response = client.receiveResponse(ip);   
