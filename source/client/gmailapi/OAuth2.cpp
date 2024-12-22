@@ -52,7 +52,7 @@ std::string OAuth::openLoginUI() {
     });
 
     // Button for opening the Google login URL in the browser
-    auto open_url_button = Button("Click here to log in", open_url_in_browser);
+    auto open_url_button = Button("Log in", open_url_in_browser);
 
     // Create the login window layout
     auto login_window = Container::Vertical({
@@ -67,7 +67,7 @@ std::string OAuth::openLoginUI() {
     // Main component with border and title
     auto main_component = Renderer(login_window, [&] {
         return vbox({
-            text("Login Window") | bold | hcenter,
+            text("Login Window") | bold | hcenter | color(Color::Green),
             separator(),
             open_url_button->Render() | hcenter,
             input->Render() | size(WIDTH, EQUAL, 50),

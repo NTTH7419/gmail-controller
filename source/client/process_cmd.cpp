@@ -187,7 +187,7 @@ void ProcessCommand::processResponse(const std::string& ip) {
             return;
         }
         std::string file_name = std::string(j["file"]);
-        if (j["status"] == SUCCESS && j["file"] != "") {
+        if (j["status"] == SUCCESS && !file_name.empty()) {
             sendResponse(j["message"], Attachment(directory + file_name, file_name));
             system(("del " + directory + file_name).c_str());
         }

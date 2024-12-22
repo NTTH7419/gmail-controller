@@ -69,7 +69,7 @@ void ListSerCommand::execute(Server& server, const std::string& param) {
     file_name = "";
     if (status == SUCCESS) {
         file_name = output_file;
-        message = "Running Services listed successfully.";
+        message = "Running sservices listed successfully.";
         system(("del " + directory + output_file).c_str());
     }
     else

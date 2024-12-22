@@ -32,9 +32,6 @@ int main() {
     Client client;
     ProcessCommand pc;
 
-    
-    auto screen = ScreenInteractive::FitComponent();
-
     int depth = 0;
 
     // popup screen
@@ -78,7 +75,7 @@ int main() {
             text("Gmail controller - Client") | bold | hcenter | color(Color::Green),
             separator(),
             window(
-                text("Log"),
+                text(" Logs "),
                 log_entries->Render() | vscroll_indicator | frame
             ) | size(WIDTH, EQUAL, 150) | size(HEIGHT, EQUAL, 20),
             separator(),
@@ -117,6 +114,7 @@ int main() {
     });
 
     // Background thread
+    auto screen = ScreenInteractive::FitComponent();
     std::atomic<bool> refresh_ui_continue = true;
     std::thread refresh_ui([&] {
         client.initialize();
