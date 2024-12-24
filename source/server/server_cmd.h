@@ -5,6 +5,7 @@
 #include <gdiplus.h>
 #include <dshow.h> 
 #include <sstream>
+#include <filesystem>
 #include "webcam.h"
 #pragma comment(lib, "gdiplus.lib")
 

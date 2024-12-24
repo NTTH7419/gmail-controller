@@ -374,9 +374,9 @@ void StartRecordCommand::execute(Client& client){
 
 void StopRecordCommand::execute(Client& client){
     if (sendCommand(client)){
-        if (client.receiveResponse(ip) == "RUNNING"){
+        if (client.receiveResponse(ip) == "RUNNING") {
             receiveFile(client, ip, directory);
         }
-        response = client.receiveResponse(ip);   
+        response = client.receiveResponse(ip);
     }
 }

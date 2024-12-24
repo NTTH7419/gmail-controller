@@ -83,6 +83,7 @@
 		"stdfloat": "cpp",
 		"rope": "cpp",
 		"unordered_set": "cpp",
-		"future": "cpp"
+		"future": "cpp",
+		"filesystem": "cpp"
 	}
 }

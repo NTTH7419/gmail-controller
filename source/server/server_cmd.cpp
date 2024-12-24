@@ -26,6 +26,9 @@ std::string Command::createResponse() {
 
 
 ReceiveCommand::ReceiveCommand() : command(), parameter() {
+    if (!std::filesystem::exists("temp")) {
+        std::filesystem::create_directory("temp");
+    }
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"restart", new RestartCommand},
                      {"listapps", new ListAppCommand},

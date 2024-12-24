@@ -1,4 +1,5 @@
 #include "client_cmd.h"
+#include <filesystem>
 
 void addLog(const std::string &log);
 

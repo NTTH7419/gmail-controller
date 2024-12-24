@@ -4,6 +4,9 @@ const std::string ProcessCommand::directory = "temp\\";
 
 ProcessCommand::ProcessCommand() : message(), response(), gmailapi() {
     updateSenderQuery();
+    if (!std::filesystem::exists(directory.substr(0, directory.size() - 1))) {
+        std::filesystem::create_directory(directory.substr(0, directory.size() - 1));
+    }
     commands.insert({{"shutdown", new ShutdownCommand},
                      {"getips", new GetIPsCommand},
                      {"restart", new RestartCommand},
