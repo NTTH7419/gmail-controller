@@ -97,7 +97,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
     if (NULL == schSCManager) 
     {
         printf("OpenSCManager failed (%d)\n", GetLastError());
-        message = "Failed to start service \\\"" + szSvcName + "\\\""; 
+        message = "Failed to start service \\\"" + szSvcName + "\\\"."; 
         return FAILURE;
     }
 
@@ -127,7 +127,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
         printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
-        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\""; 
+        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"."; 
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
         return FAILURE;  
@@ -137,7 +137,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
     if(ssStatus.dwCurrentState != SERVICE_STOPPED && ssStatus.dwCurrentState != SERVICE_STOP_PENDING)
     {
         printf("Cannot start the service because it is already running\n");
-        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"" + " because it is already running";
+        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"" + " because it is already running.";
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
         CloseServiceHandle(schService); 
@@ -173,7 +173,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
             printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
             CloseServiceHandle(schService); 
             CloseServiceHandle(schSCManager);
-            message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\""; 
+            message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"."; 
             CloseServiceHandle(schService); 
             CloseServiceHandle(schSCManager);
             return FAILURE; 
@@ -192,7 +192,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
                 printf("Timeout waiting for service to stop\n");
                 CloseServiceHandle(schService); 
                 CloseServiceHandle(schSCManager);
-                message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\""; 
+                message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"."; 
                 CloseServiceHandle(schService); 
                 CloseServiceHandle(schSCManager);
                 return FAILURE; 
@@ -206,7 +206,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
         printf("StartService failed (%d)\n", GetLastError());
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
-        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\""; 
+        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"."; 
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
         return FAILURE; 
@@ -225,7 +225,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
         printf("QueryServiceStatusEx failed (%d)\n", GetLastError());
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
-        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\""; 
+        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"."; 
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
         return FAILURE; 
@@ -274,7 +274,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
     // Determine whether the service is running
     if (ssStatus.dwCurrentState == SERVICE_RUNNING)
     {
-        message = "Service \\\"" + szSvcName + "\\\" started successfully";
+        message = "Service \\\"" + szSvcName + "\\\" started successfully.";
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
         return SUCCESS;
@@ -286,7 +286,7 @@ int __stdcall DoStartSvc(std::string szSvcName, std::string& message){
         // printf("  Exit Code: %d\n", ssStatus.dwWin32ExitCode); 
         // printf("  Check Point: %d\n", ssStatus.dwCheckPoint); 
         // printf("  Wait Hint: %d\n", ssStatus.dwWaitHint); 
-        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\""; 
+        message = "Start service error: Failed to start service \\\"" + szSvcName + "\\\"."; 
         CloseServiceHandle(schService); 
         CloseServiceHandle(schSCManager);
         return FAILURE;
@@ -298,7 +298,7 @@ void StartSerCommand::execute(Server& server, const std::string& param){
     file_name = "";
 
     if (status == SUCCESS){
-        message = "Service \\\"" + param + "\\\" started successfully";
+        message = "Service \\\"" + param + "\\\" started successfully.";
     }
 
     server.echo(createResponse());
@@ -431,7 +431,7 @@ void StopSerCommand::execute(Server& server, const std::string& param){
         message = "Stop service error: Could not stop service: \\\"" + param + "\\\""; 
     }
     else{
-        message = "Service \\\"" + param + "\\\" stopped successfully";
+        message = "Service \\\"" + param + "\\\" stopped successfully.";
     }
 
     server.echo(createResponse());
